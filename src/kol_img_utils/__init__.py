@@ -7,15 +7,15 @@ from .colors import (
     rgba_to_rgb,
     increase_brightness
 )
-from .resize import (
+from .transform import (
     center_image,
     resize,
     resize2,
     resize3,
-    rotate
+    rotate,
+    apply_patch
 )
-from .utils import (
+from .misc import (
     get_image_area,
     img1_to_img3,
-    apply_patch
 )
