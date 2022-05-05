@@ -1,3 +1,4 @@
+# Image processing functions package
 # Color management routines
 # (c) kol, 2019-2022
 
@@ -70,7 +71,7 @@ def rgba_to_rgb(rgba: Union[np.ndarray, Iterable]) -> Tuple[np.ndarray, np.ndarr
     return [rgb, m]
 
 def rgb_to_rgba(rgb: Union[np.ndarray, Iterable], alpha: Optional[float] = 1.0) -> np.ndarray:
-    """ Convert RGB color to RGB color and mask.
+    """ Convert RGB color to RGBA color
 
     Args:
         rgb:    3-element numpy array or compatible type specifying a color to convert

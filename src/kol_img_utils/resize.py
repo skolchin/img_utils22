@@ -1,3 +1,4 @@
+# Image processing functions package
 # Image resizing and rotation routines
 # (c) kol, 2019-2022
 
@@ -194,7 +195,6 @@ def rotate(img: np.ndarray,
     """
 
     # Get size and center
-    # center
     h, w = img.shape[:2]
     cx, cy = w / 2, h / 2
 

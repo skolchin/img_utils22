@@ -1,3 +1,4 @@
+# Image processing functions package
 # Utility routines
 # (c) kol, 2019-2022
 
@@ -13,10 +14,10 @@ def img1_to_img3(img: np.ndarray) -> np.ndarray:
     to color one, making it suitable for further manipulations.
 
     Args:
-        img: An image. Must be one-channel ([X,Y]) image of type `np.ndarray` or compatible
+        img: An OpenCV image. Must be one-channel ([X,Y]) image of type `np.ndarray` or compatible
 
     Returns:
-        3-channel image ([X, Y, 3]) of `np.ndarray` type
+        3-channel OpenCV image ([X, Y, 3]) 
     """
     if img is None:
        return None
@@ -35,18 +36,20 @@ def get_image_area(img: np.ndarray, r: Iterable) -> np.ndarray:
     """Get part of an image defined by rectangular area.
 
     Args:
-        img      An OpenCV 3-channel image
+        img      An OpenCV BW or color image
         r        Area to extract (list or tuple [x1,y1,x2,y2])
 
     Returns:
-        Extracted area as image
+        Extracted area as OpenCV image
     """
+    if not isinstance(r, Iterable) or len(r) < 4:
+       raise ValueError(f'4-element iterable is expected, {type(r)} found')
     if r[0] < 0 or r[1] < 0:
-       raise ValueError('Invalid area origin: {}'.format(r))
+       raise ValueError(f'Invalid area origin: {r}')
     dx = r[2] - r[0]
     dy = r[3] - r[1]
     if dx <= 0 or dy <= 0:
-       raise ValueError('Invalid area length: {}'.format(r))
+       raise ValueError(f'Invalid area length: {r}')
 
     im = None
     if len(img.shape) > 2:
@@ -66,7 +69,7 @@ def apply_patch(
     clip: Optional[bool] = False, 
     alpha: Optional[float] = None) -> np.ndarray:
 
-    """ Applies a patch at given coordinates with optional alpha-channel masking.
+    """ Applies a patch at given coordinates with with optional masking and alpha-channel blending.
 
     Args:
         img:    A 3-channel OpenCV image
@@ -81,7 +84,7 @@ def apply_patch(
         An OpenCV image
     """
 
-    if y >= src.shape[0] or x  >= src.shape[1] or y < 0 or x < 0:
+    if y >= src.shape[0] or x >= src.shape[1] or y < 0 or x < 0:
         raise ValueError("Invalid coordinates")
 
     h, w = patch.shape[:2]
@@ -92,7 +95,7 @@ def apply_patch(
     if x + w >= src.shape[1] and clip:
         w = src.shape[1] - x
         patch = patch[0:h, 0:w]
-        mask = mask[0:h, 0:w]
+        mask = mask[0:h, 0:w] if mask is not None else None
 
     if patch.shape[-1] == 3 and src.shape[-1] == 4:
         patch = rgb_to_rgba(patch)
