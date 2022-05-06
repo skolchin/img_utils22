@@ -10,8 +10,6 @@ from .colors import (
 from .transform import (
     center_image,
     resize,
-    resize2,
-    resize3,
     rotate,
     apply_patch
 )
@@ -19,3 +17,4 @@ from .misc import (
     get_image_area,
     img1_to_img3,
 )
+from .align_images import align_images

@@ -43,141 +43,89 @@ def resize(
     scale: Optional[Union[Iterable, float]] = None, 
     upsize: Optional[bool] = True, 
     center: Optional[bool] = False, 
-    pad_color: Optional[Tuple] = COLOR_WHITE) -> np.ndarray:
+    pad_color: Optional[Tuple] = COLOR_WHITE,
+    extra_info: Optional[bool] = False,
+    ) -> Union[np.ndarray, Tuple]:
 
-    """Resizes an image so neither of its sides will be bigger that `max_size` saving proportions.
-
-    Args:
-        img:        An OpenCV 3-channel image
-        new_size:   If is a tuple or list with 2 elements and both > 0, specifies target image size (width, height).
-                    If one of elements is zero or a scalar value provided,
-                    image is resized proportionally with `new_size`
-                    specfying a maximum size of biggest image side.
-        scale:      Scale to resize to. Treated like `new_size`.
-        upsize:     If True, images with size less than max_size will be upsized
-        center:     If True, smaller images will be centered on bigger image with padding
-        pad_color:  Padding color
-
-    Returns:
-        Resized image
-    """
-    return resize3(img, new_size, scale, upsize, center, pad_color)[0]
-
-def resize2(
-    img: np.ndarray, 
-    new_size: Optional[Union[Iterable, int]] = None,
-    scale: Optional[Union[Iterable, float]] = None, 
-    upsize: Optional[bool] = True, 
-    center: Optional[bool] = False, 
-    pad_color: Optional[Tuple] = COLOR_WHITE) -> Tuple[np.ndarray, Tuple[float,float]]:
-
-    """Resizes an image so neither of its sides will be bigger that max_size saving proportions.
+    """Wrapper over `cv2.resize()` allowing to proportionally resize an image 
+    either to specified scale or to specified size.
 
     Args:
-        img:        An OpenCV 3-channel image
-        new_size:   If is a tuple or list with 2 elements and both > 0, specifies target image size (width, height).
-                    If one of elements is zero or a scalar value provided,
-                    image is resized proportionally with `new_size`
-                    specfying a maximum size of biggest image side.
-        scale:      Scale to resize to. Treated like `new_size`.
-        upsize:     If True, images with size less than max_size will be upsized
+        img:        An OpenCV image
+        new_size:   New size. If is an iterable with 2 elements, 
+                    specifies precise image size (width, height). Otherwise, 
+                    specfies maximum size of any image side after resizing - in this case
+                    image is resized proportionally to that size
+        scale:      Scaling ratio. If is an iterable with 2 elements, 
+                    specifies image scaling ratio on (width, height). Otherwise,
+                    specifies single scale for both sides
+        upsize:     If True, images with size less than `max_size` will be upsized
         center:     If True, smaller images will be centered on bigger image with padding
         pad_color:  Padding color
+        extra_info: If True, returns additional information (scale and offset)
 
     Returns:
-        2-element tuple containing resized image, scaling factor (tuple of 2 floats).
-        If any of scale_x, scale_y < 1, image was downsized by this side. 
+        If `extra_info` is False, returns only resized OpenCV image. 
+        Else, returns 3-element tuple containing resized image, scaling factor (tuple of 2 floats) 
+        and offset of original image in scaled one (tuple of 2 ints).  
     """
-    return resize3(img, new_size, scale, upsize, center, pad_color)[:2]
 
-def resize3(
-    img: np.ndarray, 
-    new_size: Optional[Union[Iterable, int]] = None,
-    scale: Optional[Union[Iterable, float]] = None, 
-    upsize: Optional[bool] = True, 
-    center: Optional[bool] = False, 
-    pad_color: Optional[Tuple] = COLOR_WHITE) -> Tuple[np.ndarray, Tuple[float,float], Tuple[int,int]]:
+    def _inner_resize():
+        if scale is not None:
+            # Resizing by scale
+            if not isinstance(scale, Iterable):
+                im_scale = (scale, scale)
+            else:
+                if len(scale) < 2:
+                    raise ValueError(f'Scale must be either scalar or 2-element vector')
+                im_scale = tuple(scale[:2])
 
-    """Resizes an image either to specified scale or to specified size.
-    In case of resizing to max_size, neither of resulting image sides will be bigger than that.
+            im = cv2.resize(img, dsize=None, fx=im_scale[0], fy=im_scale[1])
+            img_size = int(np.max(im.shape[:2]))
+            if new_size is not None and img_size < int(np.max(new_size)) and center:
+                return center_image(im, new_size, pad_color, im_scale)
+            else:
+                return im, im_scale, (0, 0)
 
-    Args:
-        img:        An OpenCV 3-channel image
-        new_size:   If is a tuple or list with 2 elements and both > 0, specifies target image size (width, height).
-                    If one of elements is zero or a scalar value provided,
-                    image is resized proportionally with `new_size`
-                    specfying a maximum size of biggest image side.
-        scale:      Scale to resize to. Treated like `new_size`.
-        upsize:     If True, images with size less than max_size will be upsized
-        center:     If True, smaller images will be centered on bigger image with padding
-        pad_color:  Padding color
+        else:
+            # Resizing to new_size
+            if isinstance(new_size, Iterable):
+                # Size vector provided
+                if len(new_size) < 2:
+                    raise ValueError(f'New_size must be either scalar or 2-element vector')
+                h, w = img.shape[:2]
+                im_scale = (new_size[0] / w, new_size[1] / h)
+            else:
+                # Only max size given
+                im_size_max = np.max(img.shape[:2])
+                im_size_min = np.min(img.shape[:2])
+                im_scale = float(new_size) / float(im_size_min)
 
-    Returns:
-        3-element tuple containing resized image, scaling factor (tuple of 2 floats) 
-        and offset (tuple of 2 ints).  
-        If any of scale_x, scale_y < 1, image was downsized by this side. 
-        If image was centered, offset would contain original image location.
-    """
+                if np.round(im_scale * im_size_max) > new_size:
+                    im_scale = float(new_size) / float(im_size_max)
+
+                new_size = (new_size, new_size)
+                im_scale = (im_scale, im_scale)
+
+            if not upsize and min(im_scale) > 1.0:
+                # Image size is less than new_size and upsize not allowed
+                if not center:
+                    # Nothing to do!
+                    return img, (1.0, 1.0), (0, 0)
+                else:
+                    # Make a bigger image and center source image on it
+                    im, ofs = center_image(img, new_size, pad_color)
+                    return im, im_scale, ofs
+            else:
+                # Perform normal resize
+                im = cv2.resize(img, dsize=None, fx=im_scale[0], fy=im_scale[1])
+                return im, im_scale, (0, 0)
 
     if new_size is None and scale is None:
-        raise ValueError("Either new_size or scale has to be provided")
+        raise ValueError('Either new_size or scale must be provided')
 
-    if scale is not None:
-        # Resizing by scale
-        if isinstance(scale, (list, tuple, np.ndarray)):
-            im_scale = scale[0]
-        else:
-            im_scale = scale
-
-        im = cv2.resize(img, dsize = None, fx = im_scale, fy = im_scale)
-        img_size = int(np.max(im.shape[0:2]))
-        if new_size is not None and img_size < new_size and center:
-            return center_image(im, new_size, pad_color, im_scale)
-        else:
-            return im, [im_scale, im_scale], [0, 0]
-
-    else:
-        # Resizing to new_size
-        if isinstance(new_size, (list, tuple, np.ndarray)):
-            # Check size vector
-            if len(new_size) < 2:
-                new_size = new_size[0]
-            else:
-                new_size = new_size[:2]
-                if new_size[0] is None or new_size[0] == 0:
-                    new_size = new_size[0]
-                elif new_size[1] is None or new_size[1] == 0:
-                    new_size = new_size[1]
-
-        if isinstance(new_size, (list, tuple, np.ndarray)):
-            # Size vector provided
-            h, w = img.shape[:2]
-            im_scale = [new_size[0] / w, new_size[1] / h]
-        else:
-            # Only max size given
-            im_size_max = np.max(img.shape[:2])
-            im_size_min = np.min(img.shape[:2])
-            im_scale = float(new_size) / float(im_size_min)
-
-            if np.round(im_scale * im_size_max) > new_size:
-                im_scale = float(new_size) / float(im_size_max)
-
-            new_size = (new_size, new_size)
-            im_scale = (im_scale, im_scale)
-
-        if not upsize and min(im_scale) > 1.0:
-           # Image size is less than new_size and upsize not allowed
-           if not center:
-              # Nothing to do!
-              return img, (1.0, 1.0), (0, 0)
-           else:
-              # Make a bigger image and center source image on it
-              im, ofs = center_image(img, new_size, pad_color)
-              return im, im_scale, ofs
-        else:
-           # Perform normal resize
-           im = cv2.resize(img, dsize=None, fx=im_scale[0], fy=im_scale[1])
-           return im, im_scale, (0, 0)
+    result = _inner_resize()
+    return result if extra_info else result[0]
 
 def rotate(img: np.ndarray, 
     angle: float, 
@@ -187,11 +135,13 @@ def rotate(img: np.ndarray,
     """ Rotate given image to specified angle.
 
     Args:
-        img:        An OpenCV 3-channel image
+        img:        An OpenCV image
         angle:      An angle to rotate to (>0 - clockwise)
         pad_color:  Padding color
         avoid_clipping: If True, image will be downsized to keep it intact.
                         Otherwise, image will be rotated as is
+    Returns:
+        Rotated OpenCV image
     """
 
     h, w = img.shape[:2]

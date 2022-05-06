@@ -5,8 +5,8 @@ Version 1.0.0
 This package contains various image processing functions I wrote on multiple projects.
 I developed it mostly for personal use, but I welcome free usage by anyone.
 
-All the functions are built on top of wonderful OpenCV package and therefore use
-the same data structures and conventions. 
+All the functions are built on top of wonderful [OpenCV](https://docs.opencv.org/) package and therefore 
+use the same data structures and conventions. 
 
 Basically, an OpenCV's image is an [numpy](https://numpy.org/) array (`ndarray`), 
 usually of `np.uint8` type, with 3 dimensions representing image's *height*, *width* and *color depth* 
@@ -24,10 +24,13 @@ For example, 100x100 black color image will be represented as numpy array with s
 and all its values equal to `0`, while the same size red image will have the same number of
 dimensions, but its last value would be `(0,0,255)`.
 
+Parts of the code were obtained from public sources, respective authorship retained.
+
+
 ## List of functions (version 1.0.0)
 
-| Function | Description |
-|----------|-------------|
+| Function              | Description |
+|-----------------------|-------------|
 | random_colors         | Iterator which returns a sequence of random colors |
 | gradient_colors       | Gradient color generator |
 | rgba_to_rgb           | Convert RGBA color to RGB color |
@@ -38,7 +41,8 @@ dimensions, but its last value would be `(0,0,255)`.
 | rotate                | Rotate given image to specified angle |
 | img1_to_img3          | Converts 1-channel (BW) image to 3-channel (color) image |
 | get_image_area        | Get part of an image defined by rectangular area |
-| apply_patch           | Applies a patch at given coordinates with optional masking and alpha-channel blending |
+| apply_patch           | Applies a patch with optional masking and alpha-channel blending |
+| align_images          | Align two images |
 
 
 ## Installation
