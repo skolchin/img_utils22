@@ -5,6 +5,10 @@ Version 1.0.0
 This package contains various image processing functions I wrote on multiple projects.
 I developed it mostly for personal use, but I welcome free usage by anyone.
 
+Some parts of the code were obtained from public sources, references kept in files.
+
+## Intro
+
 All the functions are built on top of wonderful [OpenCV](https://docs.opencv.org/) package and therefore 
 use the same data structures and conventions. 
 
@@ -14,7 +18,7 @@ respectivelly.
 
 Colors are encoded as 3-element tuple with unsigned integer values ranged from `0` (black) to `255` (white)
 which occupy the last dimension of an array. Each tuple element specifies value of some basic
-color. Other colors are encoded as combination of basic color values. 
+color. Other colors are encoded as combination of basic color values.  
 
 Order of colors used by the OpenCV is *blue, green, red (BGR)*
 which is different from other packages like [matplotlib](https://matplotlib.org/) or 
@@ -23,8 +27,6 @@ which is different from other packages like [matplotlib](https://matplotlib.org/
 For example, 100x100 black color image will be represented as numpy array with shape `[100,100,3]`
 and all its values equal to `0`, while the same size red image will have the same number of
 dimensions, but its last value would be `(0,0,255)`.
-
-Parts of the code were obtained from public sources, respective authorship retained.
 
 
 ## List of functions (version 1.0.0)
@@ -43,6 +45,7 @@ Parts of the code were obtained from public sources, respective authorship retai
 | get_image_area        | Get part of an image defined by rectangular area |
 | apply_patch           | Applies a patch with optional masking and alpha-channel blending |
 | align_images          | Align two images |
+| get_image_diff        | Get the difference of two images |
 
 
 ## Installation
@@ -60,6 +63,10 @@ Unit tests are written for [pytest](https://docs.pytest.org/). To perform all te
 
     >>> pytest -s -v
 
-Not everything is covered by tests, though, but I've been working on it.
+In order to show images produced during the tests, specify `--show_images` key:
 
-Please also note that I didn't test this package under *nix.
+    >>> pytest -s -v --show_images -k align
+
+In this mode, while an image is showing, press `Q` to continue testing.
+
+Not everything is currently covered by tests but I've been working on it. Please also note that I didn't test this package under *nix.

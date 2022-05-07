@@ -14,7 +14,8 @@ from .transform import (
     apply_patch
 )
 from .misc import (
-    get_image_area,
     img1_to_img3,
+    get_image_area,
+    get_image_diff,
 )
 from .align_images import align_images

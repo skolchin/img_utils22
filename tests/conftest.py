@@ -56,3 +56,9 @@ def blue_skewed_square_image(white_image):
     points = np.array([[[cx-w+dw, cy-h], [cx+w+dw, cy-h], 
                        [cx+w, cy+h], [cx-w, cy+h]]], np.int32)
     return cv2.fillPoly(white_image.copy(), points, (255,0,0), 8)
+
+@pytest.fixture
+def blue_shifted_square_image(white_image):
+    cy, cx = int(white_image.shape[0]/2), int(white_image.shape[1]/2)
+    return cv2.rectangle(white_image.copy(), (int(cx/2)+int(cx/4), int(cy/2)+int(cy/4)), 
+                         (cx+int(cx/2), cy+int(cy/2)), (255,0,0), -1)
