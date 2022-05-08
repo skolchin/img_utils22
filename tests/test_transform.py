@@ -5,7 +5,7 @@
 import pytest
 import numpy as np
 from common import show_image
-from kol_img_utils import apply_patch
+from img_utils22 import apply_patch
 
 def test_apply_patch(white_image, small_black_image, debug_show):
     py, px = int(white_image.shape[0] / 2), int(white_image.shape[1] / 2)

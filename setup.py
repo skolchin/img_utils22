@@ -1,5 +1,5 @@
 """
-Setup routine for kol_img_utils package
+Setup routine for img_utils22 package
 """
 import setuptools
 
@@ -9,14 +9,14 @@ with open("requirements.txt", "r") as fh:
     requirements = fh.readlines()
 
 setuptools.setup(
-    name="kol_img_utils",
+    name="img_utils22",
     version="1.0.0",
     author="Kol",
     author_email="skolchin@gmail.ru",
     description="Image utility routines",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://gihub.com/kol_img_utils",
+    url="https://gihub.com/skolchin/img_utils22",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

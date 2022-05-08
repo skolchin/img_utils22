@@ -3,7 +3,7 @@
 # (c) kol, 2022
 
 from common import show_image, put_centered_text
-from kol_img_utils import align_images, get_image_diff, COLOR_WHITE
+from img_utils22 import align_images, get_image_diff, COLOR_WHITE
 
 def test_align_images(blue_square_image, blue_rotated_square_image, blue_skewed_square_image, 
                         blue_shifted_square_image, debug_show):

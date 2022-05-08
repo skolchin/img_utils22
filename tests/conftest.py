@@ -5,7 +5,7 @@
 import pytest
 import cv2
 import numpy as np
-from kol_img_utils import rotate
+from img_utils22 import rotate
 
 # from https://stackoverflow.com/questions/40880259/how-to-pass-arguments-in-pytest-by-command-line
 def pytest_addoption(parser):

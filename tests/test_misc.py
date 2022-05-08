@@ -4,7 +4,7 @@
 
 import pytest
 from common import show_image
-from kol_img_utils import img1_to_img3, get_image_area
+from img_utils22 import img1_to_img3, get_image_area
 
 def test_img1_to_img3(white_image_bw, debug_show):
     img = img1_to_img3(white_image_bw)

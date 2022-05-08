@@ -1,4 +1,5 @@
 # Image processing functions package
+
 Version 1.0.0  
 (c) kol 2019-2022  
 
@@ -54,7 +55,7 @@ Since I didn't publish it to PyPi, the package must be built from scratch, like 
 
     >>> python -m pip install build
     >>> python -m build .
-    >>> pip install dist/kol_img_utils-<version>-py3-none-any.whl
+    >>> pip install dist/img_utils22-<version>-py3-none-any.whl
 
 ## Unit testing
 

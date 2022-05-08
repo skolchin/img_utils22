@@ -1,4 +1,4 @@
 dist/*
-src/kol_img_utils.egg-info/*
+*/*.egg-info/*
 .vscode/*
 *.pyc
