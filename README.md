@@ -10,11 +10,11 @@ Some parts of the code were obtained from public sources, references kept in fil
 
 ## Intro
 
-All the functions are built on top of wonderful [OpenCV](https://docs.opencv.org/) package and therefore 
-use the same data structures and conventions. 
+All the functions are built on top of wonderful [OpenCV](https://docs.opencv.org/) package and therefore
+use the same data structures and conventions.
 
-Basically, an OpenCV's image is an [numpy](https://numpy.org/) array (`ndarray`), 
-usually of `np.uint8` type, with 3 dimensions representing image's *height*, *width* and *color depth* 
+Basically, an OpenCV's image is a [Numpy](https://numpy.org/) array (`ndarray`),
+usually of `np.uint8` type, with 3 dimensions representing image's *height*, *width* and *color depth*
 respectivelly.
 
 Colors are encoded as 3-element tuple with unsigned integer values ranged from `0` (black) to `255` (white)
@@ -22,15 +22,16 @@ which occupy the last dimension of an array. Each tuple element specifies value 
 color. Other colors are encoded as combination of basic color values.  
 
 Order of colors used by the OpenCV is *blue, green, red (BGR)*
-which is different from other packages like [matplotlib](https://matplotlib.org/) or 
+which is different from other packages like [matplotlib](https://matplotlib.org/) or
 [Pillow](https://pillow.readthedocs.io).
 
 For example, 100x100 black color image will be represented as numpy array with shape `[100,100,3]`
-and all its values equal to `0`, while the same size red image will have the same number of
+with all its values equal to `0`, while the same size red image will have the same number of
 dimensions, but its last value would be `(0,0,255)`.
 
+## Functions
 
-## List of functions (version 1.0.0)
+Here's the list of functions included so far:
 
 | Function              | Description |
 |-----------------------|-------------|
@@ -47,7 +48,6 @@ dimensions, but its last value would be `(0,0,255)`.
 | apply_patch           | Applies a patch with optional masking and alpha-channel blending |
 | align_images          | Align two images |
 | get_image_diff        | Get the difference of two images |
-
 
 ## Installation
 

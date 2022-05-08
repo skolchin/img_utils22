@@ -19,3 +19,4 @@ from .misc import (
     get_image_diff,
 )
 from .align_images import align_images
+from .pipe import pipe, Pipe
