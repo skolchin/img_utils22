@@ -1,23 +1,24 @@
 # Image processing functions package
-# Image transformation routines
 # (c) kol, 2019-2022
+
+""" Image transformation routines """
 
 import cv2
 import numpy as np
-from typing import Optional, Iterable, Union, Tuple
+from typing import Iterable, Union, Tuple
 
-from .colors import COLOR_WHITE, rgb_to_rgba
+from .colors import COLOR_BLACK, rgb_to_rgba
 
 def center_image(
     img: np.ndarray, 
-    new_size: Iterable, 
-    pad_color: Optional[Tuple] = COLOR_WHITE) -> Tuple[np.ndarray, Tuple]:
+    new_size: Iterable[int], 
+    pad_color: Tuple[int] = COLOR_BLACK) -> Tuple[np.ndarray, Tuple]:
 
     """ Make a bigger image and center initial image on it.
 
     Args:
-        img:        A 3-channel OpenCV image
-        new_size:   2-element tuple or list with new image size (width, height)
+        img:        An OpenCV image
+        new_size:   2-element tuple or list with new image size (height, width)
         pad_color:  Padding color
 
     Returns:
@@ -29,48 +30,80 @@ def center_image(
         c = pad_color[0] if type(pad_color) is tuple else pad_color
         im = np.full((new_size[0], new_size[1]), c, dtype=img.dtype)
 
-    h, w = img.shape[:2]
-    dx, dy = int((new_size[1] - w)/2), int((new_size[0] - h)/2)
-    if dx < 0 or dy < 0:
-        raise ValueError(f'New image dimensions {new_size} are less than original one {img.shape[:2]}')
+    h = min(img.shape[0], new_size[0])
+    w = min(img.shape[1], new_size[1])
+    dy, dx = int((new_size[0] - h)/2), int((new_size[1] - w)/2)
 
-    im[dy:dy + h, dx:dx + w] = img
+    im[dy:dy+h, dx:dx+w] = img[0:h,0:w]
     return im, (dx, dy)
 
-def resize(
+def extend_image(
     img: np.ndarray, 
-    new_size: Optional[Union[Iterable, int]] = None,
-    scale: Optional[Union[Iterable, float]] = None, 
-    upsize: Optional[bool] = True, 
-    center: Optional[bool] = False, 
-    pad_color: Optional[Tuple] = COLOR_WHITE,
-    extra_info: Optional[bool] = False,
+    new_size: Iterable[int], 
+    pad_color: Tuple[int] = COLOR_BLACK) -> np.ndarray:
+
+    """ Extends or shrinks image dimensions to new size
+
+    Args:
+        img:        An OpenCV image
+        new_size:   2-element tuple or list with new image size (height, width)
+        pad_color:  Padding color
+
+    Returns:
+        OpenCV image with target dimensions
+    """
+
+    if len(img.shape) > 2:
+        im = np.full((new_size[0], new_size[1], img.shape[2]), pad_color, dtype=img.dtype)
+    else:
+        c = pad_color[0] if type(pad_color) is tuple else pad_color
+        im = np.full((new_size[0], new_size[1]), c, dtype=img.dtype)
+
+    dx = min(new_size[1], img.shape[1])
+    dy = min(new_size[0], img.shape[0])
+        
+    im[0:dy,0:dx] = img[0:dy,0:dx]
+    return im
+
+def rescale(
+    img: np.ndarray, 
+    new_size: Union[Iterable[int], int] = None,
+    scale: Union[Iterable[float], float] = None, 
+    center: bool = False, 
+    pad_color: Tuple[int] = COLOR_BLACK,
+    return_extra: bool = False,
     ) -> Union[np.ndarray, Tuple]:
 
-    """Wrapper over `cv2.resize()` allowing to proportionally resize an image 
-    either to specified scale or to specified size.
+    """ Proportionally extends an image either by specified scale or to specified size.  
+
+    Differs from `resize` in that this function leaves original image intact
+    while simply extending or shrinking its dimensions. In case of upsizing, original
+    image might be also placed in the center of the new one.
 
     Args:
         img:        An OpenCV image
         new_size:   New size. If is an iterable with 2 elements, 
-                    specifies precise image size (width, height). Otherwise, 
-                    specfies maximum size of any image side after resizing - in this case
+                    specifies precise image size (height, width). Otherwise, 
+                    specfies maximum size of any image side after rescaling - in this case
                     image is resized proportionally to that size
         scale:      Scaling ratio. If is an iterable with 2 elements, 
-                    specifies image scaling ratio on (width, height). Otherwise,
+                    specifies image scaling ratio on (height, width). Otherwise,
                     specifies single scale for both sides
-        upsize:     If True, images with size less than `max_size` will be upsized
-        center:     If True, smaller images will be centered on bigger image with padding
-        pad_color:  Padding color
-        extra_info: If True, returns additional information (scale and offset)
+        center:     If True, smaller images will be centered on bigger image with padding when extending
+        pad_color:  Padding color used when extending images to bigger size.
+                    Note that in actual resizing (`rescale==True`) `pad_color` is ignored.
+        return_extra: If True, returns additional information (scale and offset)
 
     Returns:
-        If `extra_info` is False, returns only resized OpenCV image. 
+        If `return_extra` is False, returns only rescaled OpenCV image. 
         Else, returns 3-element tuple containing resized image, scaling factor (tuple of 2 floats) 
-        and offset of original image in scaled one (tuple of 2 ints).  
+        and offset of original image in scaled one (tuple of 2 ints).
+
+    See Also:
+        resize
     """
 
-    def _inner_resize():
+    def _inner_rescale(img, new_size, scale, center, pad_color):
         if scale is not None:
             # Resizing by scale
             if not isinstance(scale, Iterable):
@@ -80,12 +113,76 @@ def resize(
                     raise ValueError(f'Scale must be either scalar or 2-element vector')
                 im_scale = tuple(scale[:2])
 
-            im = cv2.resize(img, dsize=None, fx=im_scale[0], fy=im_scale[1])
-            img_size = int(np.max(im.shape[:2]))
-            if new_size is not None and img_size < int(np.max(new_size)) and center:
-                return center_image(im, new_size, pad_color, im_scale)
+            new_size = (int(img.shape[1] * im_scale[1]), int(img.shape[0] * im_scale[0]))
+        else:
+            # Resizing to new_size
+            if isinstance(new_size, Iterable):
+                # Size vector provided
+                if len(new_size) < 2:
+                    raise ValueError(f'New_size must be either scalar or 2-element vector')
+                h, w = img.shape[:2]
+                im_scale = (new_size[0] / h, new_size[1] / w)
             else:
-                return im, im_scale, (0, 0)
+                # Only max size given
+                im_size_max = np.max(img.shape[:2])
+                im_size_min = np.min(img.shape[:2])
+                im_scale = float(new_size) / float(im_size_min)
+
+                if np.round(im_scale * im_size_max) > new_size:
+                    im_scale = float(new_size) / float(im_size_max)
+
+                new_size = (int(img.shape[0]*im_scale), int(img.shape[1]*im_scale))
+                im_scale = (im_scale, im_scale)
+
+        if not center:
+            return extend_image(img, new_size, pad_color), im_scale, (0,0)
+        else:
+            im, offs = center_image(img, new_size, pad_color)
+            return im, im_scale, offs
+
+    if new_size is None and scale is None:
+        raise ValueError('Either new_size or scale must be provided')
+
+    result = _inner_rescale(img, new_size, scale, center, pad_color)
+    return result if return_extra else result[0]
+
+def resize(
+    img: np.ndarray, 
+    new_size: Union[Iterable[int], int] = None,
+    scale: Union[Iterable[float], float] = None, 
+    return_extra: bool = False,
+) -> Union[np.ndarray, Tuple]:
+
+    """ Proportionally resizes an image either to specified scale or to specified size.
+
+    Args:
+        img:        An OpenCV image
+        new_size:   New size. If is an iterable with 2 elements, 
+                    specifies precise target size (height, width). Otherwise, 
+                    specfies maximum size of any image side after resizing - in this case
+                    image is resized proportionally
+        scale:      Scaling ratio. If is an iterable with 2 elements, 
+                    specifies image scaling ratio on (height, width). Otherwise,
+                    specifies single scale for both sides
+        return_extra: If True, returns actual scale along with the image
+
+    Returns:
+        If `return_extra` is False, returns only resized OpenCV image. 
+        Else, returns 2-element tuple containing resized image and actuals scaling factor (tuple of 2 floats)
+    """
+
+    def _inner_resize(img, new_size, scale):
+        if scale is not None:
+            # Resizing by scale
+            if not isinstance(scale, Iterable):
+                im_scale = (scale, scale)
+            else:
+                if len(scale) < 2:
+                    raise ValueError(f'Scale must be either scalar or 2-element vector')
+                im_scale = tuple(scale[:2])
+
+            im = cv2.resize(img, dsize=None, fx=float(im_scale[1]), fy=float(im_scale[0]))
+            return im, im_scale
 
         else:
             # Resizing to new_size
@@ -94,7 +191,7 @@ def resize(
                 if len(new_size) < 2:
                     raise ValueError(f'New_size must be either scalar or 2-element vector')
                 h, w = img.shape[:2]
-                im_scale = (new_size[0] / w, new_size[1] / h)
+                im_scale = (new_size[0] / h, new_size[1] / w)
             else:
                 # Only max size given
                 im_size_max = np.max(img.shape[:2])
@@ -107,30 +204,19 @@ def resize(
                 new_size = (new_size, new_size)
                 im_scale = (im_scale, im_scale)
 
-            if not upsize and min(im_scale) > 1.0:
-                # Image size is less than new_size and upsize not allowed
-                if not center:
-                    # Nothing to do!
-                    return img, (1.0, 1.0), (0, 0)
-                else:
-                    # Make a bigger image and center source image on it
-                    im, ofs = center_image(img, new_size, pad_color)
-                    return im, im_scale, ofs
-            else:
-                # Perform normal resize
-                im = cv2.resize(img, dsize=None, fx=im_scale[0], fy=im_scale[1])
-                return im, im_scale, (0, 0)
+            im = cv2.resize(img, dsize=None, fx=im_scale[1], fy=im_scale[0])
+            return im, im_scale
 
     if new_size is None and scale is None:
         raise ValueError('Either new_size or scale must be provided')
 
-    result = _inner_resize()
-    return result if extra_info else result[0]
+    result = _inner_resize(img, new_size, scale)
+    return result if return_extra else result[0]
 
 def rotate(img: np.ndarray, 
     angle: float, 
-    pad_color: Optional[Tuple] = COLOR_WHITE, 
-    avoid_clipping: Optional[bool] = True) -> np.ndarray:
+    pad_color: Tuple = COLOR_BLACK,
+    avoid_clipping: bool = True) -> np.ndarray:
 
     """ Rotate given image to specified angle.
 
@@ -162,62 +248,62 @@ def rotate(img: np.ndarray,
                           borderMode = cv2.BORDER_CONSTANT,
                           borderValue = pad_color)
 
-def apply_patch(
-    src: np.ndarray, 
+def patch(
+    img: np.ndarray, 
     x: int, 
     y: int, 
-    patch: np.ndarray, 
-    mask: Optional[np.ndarray] = None, 
-    clip: Optional[bool] = False, 
-    alpha: Optional[float] = None) -> np.ndarray:
+    patch_img: np.ndarray, 
+    patch_mask: np.ndarray = None, 
+    clip: bool = False, 
+    alpha: float = None) -> np.ndarray:
 
     """ Applies a patch at given coordinates with with optional masking and alpha-channel blending.
 
     Args:
-        img:    A 3-channel OpenCV image
-        x:      Patch X offset
-        y:      Patch Y offset
-        patch:  Patch OpenCV image
-        mask:   Optional boolean mask to apply over patch
-        clip:   Whether to clip patch if it's bigger than image
-        alpha:  Alpha channel value
+        img:        A 3-channel OpenCV image
+        x:          Patch X offset
+        y:          Patch Y offset
+        patch_img:  Patch OpenCV image
+        patch_mask: Optional boolean mask to apply over patch
+        clip:       Whether to clip patch if it's bigger than image
+        alpha:      Alpha channel value
 
     Returns:
         An OpenCV image
     """
 
-    if y >= src.shape[0] or x >= src.shape[1] or y < 0 or x < 0:
+    if y >= img.shape[0] or x >= img.shape[1] or y < 0 or x < 0:
         raise ValueError("Invalid coordinates")
 
-    h, w = patch.shape[:2]
-    if (y + h > src.shape[0] or x + w > src.shape[1]) and not clip:
+    h, w = patch_img.shape[:2]
+    if (y + h > img.shape[0] or x + w > img.shape[1]) and not clip:
         raise ValueError("Patch is outside image area and clipping not specified")
-    if y + h >= src.shape[0] and clip:
-        h = src.shape[0] - y
-    if x + w >= src.shape[1] and clip:
-        w = src.shape[1] - x
-        patch = patch[0:h, 0:w]
-        mask = mask[0:h, 0:w] if mask is not None else None
+    if y + h >= img.shape[0] and clip:
+        h = img.shape[0] - y
+    if x + w >= img.shape[1] and clip:
+        w = img.shape[1] - x
+        patch_img = patch_img[0:h, 0:w]
+        patch_mask = patch_mask[0:h, 0:w] if patch_mask is not None else None
 
-    if patch.shape[-1] == 3 and src.shape[-1] == 4:
+    if patch_img.shape[-1] == 3 and img.shape[-1] == 4:
         # Patch contains alpha channel
-        patch = rgb_to_rgba(patch)
+        patch_img = rgb_to_rgba(patch_img)
 
-    dst = src.copy()
+    dst = img.copy()
     area = dst[y:(y+h), x:(x+w)]
-    if mask is None:
+    if patch_mask is None:
         if alpha is None:
-            area = patch
+            area = patch_img
         else:
-            cv2.addWeighted(area, 1 - alpha, patch, alpha, 0, area)
+            cv2.addWeighted(area, 1 - alpha, patch_img, alpha, 0, area)
     else:
         if alpha is None:
-            area[mask > 0] = patch[mask > 0]
+            area[patch_mask > 0] = patch_img[patch_mask > 0]
         else:
             dtyp = area.dtype
-            a = area[mask > 0] * (1-alpha)
-            p = patch[mask > 0] * alpha
-            area[mask > 0] = a.astype(dtyp) + p.astype(dtyp)
+            a = area[patch_mask > 0] * (1-alpha)
+            p = patch_img[patch_mask > 0] * alpha
+            area[patch_mask > 0] = a.astype(dtyp) + p.astype(dtyp)
 
     dst[y:(y+h), x:(x+w)] = area
     return dst

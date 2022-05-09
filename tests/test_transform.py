@@ -5,31 +5,32 @@
 import pytest
 import numpy as np
 from common import show_image
-from img_utils22 import apply_patch
 
-def test_apply_patch(white_image, small_black_image, debug_show):
-    py, px = int(white_image.shape[0] / 2), int(white_image.shape[1] / 2)
-    ph, pw = small_black_image.shape[:2]
-    img = apply_patch(white_image, px, py, small_black_image)
-    assert tuple(img.shape) == tuple(white_image.shape)
+from img_utils22 import patch, resize, rescale, COLOR_WHITE
+
+def test_apply_patch(white_square_image, small_black_square_image, debug_show):
+    py, px = int(white_square_image.shape[0] / 2), int(white_square_image.shape[1] / 2)
+    ph, pw = small_black_square_image.shape[:2]
+    img = patch(white_square_image, px, py, small_black_square_image)
+    assert tuple(img.shape) == tuple(white_square_image.shape)
     assert tuple(img[py-1,px-1, :]) == (255,255,255)
     assert tuple(img[py,px, :]) == (0,0,0)
     assert tuple(img[py+ph-1,px+pw-1, :]) == (0,0,0)
     assert tuple(img[py+ph,px+pw, :]) == (255,255,255)
     show_image(img, debug_show, 'test_apply_patch:1 - no mask')
 
-    mask = np.ones_like(small_black_image)
+    mask = np.ones_like(small_black_square_image)
     mask[0:int(ph/2), :, :] = 0
-    img = apply_patch(white_image, px, py, small_black_image, mask=mask)
-    assert tuple(img.shape) == tuple(white_image.shape)
+    img = patch(white_square_image, px, py, small_black_square_image, patch_mask=mask)
+    assert tuple(img.shape) == tuple(white_square_image.shape)
     assert tuple(img[py-1,px-1, :]) == (255,255,255)
     assert tuple(img[py,px, :]) == (255,255,255)
     assert tuple(img[py+ph-1,px+pw-1, :]) == (0,0,0)
     assert tuple(img[py+ph,px+pw, :]) == (255,255,255)
     show_image(img, debug_show, 'test_apply_patch:2 - with mask')
 
-    img = apply_patch(white_image, px, py, small_black_image, alpha=0.5)
-    assert tuple(img.shape) == tuple(white_image.shape)
+    img = patch(white_square_image, px, py, small_black_square_image, alpha=0.5)
+    assert tuple(img.shape) == tuple(white_square_image.shape)
     assert tuple(img[py-1,px-1, :]) == (255,255,255)
     assert tuple(img[py,px, :]) == (128,128,128)
     assert tuple(img[py+ph-1,px+pw-1, :]) == (128,128,128)
@@ -37,9 +38,48 @@ def test_apply_patch(white_image, small_black_image, debug_show):
     show_image(img, debug_show, 'test_apply_patch:3 - with alpha')
 
     with pytest.raises(ValueError):
-        apply_patch(small_black_image, 0, 0, white_image)
+        patch(small_black_square_image, 0, 0, white_square_image)
 
-    img = apply_patch(small_black_image, 0, 0, white_image, clip=True)
-    assert tuple(img.shape) == tuple(small_black_image.shape)
+    img = patch(small_black_square_image, 0, 0, white_square_image, clip=True)
+    assert tuple(img.shape) == tuple(small_black_square_image.shape)
     assert tuple(img[0,0, :]) == (255,255,255)
     show_image(img, debug_show, 'test_apply_patch:4 - with clipping')
+
+
+def test_resize(black_rect_image, debug_show):
+    show_image(black_rect_image, debug_show, 'test_resize:1 - original')
+
+    new_size = max(black_rect_image.shape[:2])*2
+    img, scale = resize(black_rect_image, new_size, return_extra=True)
+    assert max(img.shape) == new_size
+    assert scale == (2.0, 2.0)
+    show_image(img, debug_show, 'test_resize:2 - upsize to max')
+
+    new_size = int(min(black_rect_image.shape[:2])/2)
+    img, scale = resize(black_rect_image, new_size, return_extra=True)
+    assert scale == (0.25, 0.25)
+    assert max(img.shape) == new_size
+    show_image(img, debug_show, 'test_resize:3 - downsize to min')
+
+    new_size = (int(black_rect_image.shape[0]/2), int(black_rect_image.shape[1]/2))
+    img, scale = resize(black_rect_image, new_size, return_extra=True)
+    assert scale == (0.5, 0.5)
+    assert tuple(img.shape[:2]) == new_size
+    show_image(img, debug_show, 'test_resize:4 - resize to exact size')
+
+def test_rescale(black_rect_image, debug_show):
+    show_image(black_rect_image, debug_show, 'test_rescale:1 - original')
+
+    new_size = max(black_rect_image.shape[:2])*2
+    img, scale, offs = rescale(black_rect_image, new_size, pad_color=COLOR_WHITE, return_extra=True)
+    assert tuple(img.shape[:2]) == (black_rect_image.shape[:2][0]*2, black_rect_image.shape[:2][1]*2)
+    assert scale == (2.0, 2.0)
+    assert offs == (0, 0)
+    show_image(img, debug_show, 'test_upscale:2 - upscale to max')
+
+    new_size = max(black_rect_image.shape[:2])*2
+    img, scale, offs = rescale(black_rect_image, new_size, pad_color=COLOR_WHITE, center=True, return_extra=True)
+    assert tuple(img.shape[:2]) == (black_rect_image.shape[0]*2, black_rect_image.shape[1]*2)
+    assert scale == (2.0, 2.0)
+    assert offs == (int(black_rect_image.shape[1]/2), int(black_rect_image.shape[0]/2))
+    show_image(img, debug_show, 'test_upscale:3 - upscale to max centered')

@@ -1,11 +1,12 @@
 # Image processing functions package
-# Misc routines
 # (c) kol, 2019-2022
+
+""" Misc routines """
 
 import cv2
 import numpy as np
 from skimage.metrics import structural_similarity
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Tuple
 
 from .align_images import align_images
 
@@ -33,24 +34,24 @@ def img1_to_img3(img: np.ndarray) -> np.ndarray:
     for i in range(3): img3[:,:,i] = img
     return img3
 
-def get_image_area(img: np.ndarray, r: Iterable) -> np.ndarray:
+def get_image_area(img: np.ndarray, area: Iterable) -> np.ndarray:
     """Get part of an image defined by rectangular area.
 
     Args:
-        img:     An OpenCV BW or color image
-        r:       Area to extract (list or tuple [x1,y1,x2,y2])
+        img:    An OpenCV image
+        area:   Area to extract (list or tuple [x1,y1,x2,y2])
 
     Returns:
         Extracted area as OpenCV image
     """
-    if not isinstance(r, Iterable) or len(r) < 4:
-       raise ValueError(f'4-element iterable is expected, {type(r)} found')
-    if r[0] < 0 or r[1] < 0:
-       raise ValueError(f'Invalid area origin: {r}')
-    dx = r[2] - r[0]
-    dy = r[3] - r[1]
+    if not isinstance(area, Iterable) or len(area) < 4:
+       raise ValueError(f'4-element iterable is expected, {type(area)} found')
+    if area[0] < 0 or area[1] < 0:
+       raise ValueError(f'Invalid area origin: {area}')
+    dx = area[2] - area[0]
+    dy = area[3] - area[1]
     if dx <= 0 or dy <= 0:
-       raise ValueError(f'Invalid area length: {r}')
+       raise ValueError(f'Invalid area length: {area}')
 
     im = None
     if len(img.shape) > 2:
@@ -58,14 +59,14 @@ def get_image_area(img: np.ndarray, r: Iterable) -> np.ndarray:
     else:
        im = np.empty((dy, dx), dtype=img.dtype)
 
-    im[:] = img[r[1]:r[3], r[0]:r[2]]
+    im[:] = img[area[1]:area[3], area[0]:area[2]]
     return im
 
 def get_image_diff(
    im1: np.ndarray, 
    im2: np.ndarray, 
-   align_mode: Optional[str] = None,
-   multichannel: Optional[bool] = False) -> Tuple[float, np.ndarray]:
+   align_mode: str = None,
+   multichannel: bool = False) -> Tuple[float, np.ndarray]:
 
     """ Get the difference of two images. 
     The function calculates structure similarity index (SSIM) and difference matrix

@@ -31,7 +31,7 @@ dimensions, but its last value would be `(0,0,255)`.
 
 ## Functions
 
-Here's the list of functions included so far:
+The list of functions included so far:
 
 | Function              | Description |
 |-----------------------|-------------|
@@ -39,19 +39,29 @@ Here's the list of functions included so far:
 | gradient_colors       | Gradient color generator |
 | rgba_to_rgb           | Convert RGBA color to RGB color |
 | rgb_to_rgba           | Convert RGB color to RGBA color |
-| increase_brightness   | Increase image brightness by given value |
 | center_image          | Make a bigger image and center initial image on it |
-| resize                | Resizes an image so neither of its sides will be bigger specified size |
+| extend_image          | Extends or shrinks image dimensions to new size |
+| rescale               | Proportionally extends an image either by specified scale or to specified size |
+| resize                | Proportionally resizes an image either to specified scale or to specified size |
 | rotate                | Rotate given image to specified angle |
+| patch                 | Applies a patch image with optional masking and alpha-channel blending |
 | img1_to_img3          | Converts 1-channel (BW) image to 3-channel (color) image |
 | get_image_area        | Get part of an image defined by rectangular area |
-| apply_patch           | Applies a patch with optional masking and alpha-channel blending |
 | align_images          | Align two images |
 | get_image_diff        | Get the difference of two images |
+| pyramid_filter        | Pyramid filtering |
+| gray                  | Converts to gray |
+| extract_channel       | Extracts one channel |
+| threshold             | Calculates thresholding mask |
+| dilate                | Dilate image |
+| erode                 | Erode image |
+| blur                  | Blur image |
+| equalize_luminosity   | Equalize luminocity |
+| increase_brightness   | Increase image brightness by given value |
 
 ## Installation
 
-Since I didn't publish it to PyPi, the package must be built from scratch, like this:
+Since I didn't publish it to PyPi yet, the package must be built from scratch, like this:
 
     >>> python -m pip install build
     >>> python -m build .

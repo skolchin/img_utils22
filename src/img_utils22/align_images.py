@@ -1,13 +1,14 @@
 # Image processing functions package
-# Image alignment routines
 # (c) kol, 2019-2022
 #
 # Based on Satya Mallick article at
 # https://www.learnopencv.com/image-alignment-ecc-in-opencv-c-python/
 
+""" Image alignment routines """
+
 import cv2
 import numpy as np
-from typing import Optional, Tuple
+from typing import Tuple
 from .colors import COLOR_BLACK
 
 _MODES = {
@@ -20,10 +21,10 @@ _MODES = {
 def align_images(
     im1: np.ndarray, 
     im2: np.ndarray, 
-    mode: Optional[str] = 'affine',
-    pad_color: Optional[Tuple] = COLOR_BLACK,
-    num_iter: Optional[int] = 1000,
-    term_eps: Optional[float] = 1e-10) -> np.ndarray:
+    mode: str = 'affine',
+    pad_color: Tuple = COLOR_BLACK,
+    num_iter: int = 1000,
+    term_eps: float = 1e-10) -> np.ndarray:
 
     """Algins two images.  
     The function tries to align one image to another so they would converge

@@ -1,54 +1,54 @@
 # Image processing functions package
-# Color management routines
 # (c) kol, 2019-2022
+
+""" Functions dealing with colors """
 
 import cv2
 import numpy as np
 from random import randint
-from typing import Optional, Iterable, Union, Tuple
+from typing import Tuple
 
 COLOR_BLACK = (0, 0, 0)
 COLOR_WHITE = (255, 255, 255)
+COLOR_BLUE = (255, 0, 0)
+COLOR_GREEN = (0, 255, 0)
+COLOR_RED = (0, 0, 255)
+COLOR_GRAY = (127, 127, 127)
 
-def random_colors(num_colors: int, with_alpha: bool = False):
+def random_colors(num_colors: int):
     """ Iterator which returns a sequence of random colors.
 
     Args:
         num_colors: number of colors to return
-        with_alpha: True to add alpha channel
 
     Returns:
-        Iterator which yields 3- or 4-element tuples of random colors
+        Iterator which yields 3-element tuples of random colors
     """
-    for _ in num_colors:
-        if not with_alpha:
-            yield randint(0,255), randint(0,255), randint(0,255)
-        else:
-            yield randint(0,255), randint(0,255), randint(0,255), randint(0,255) / 255.0
+    for _ in range(num_colors):
+        yield randint(0,255), randint(0,255), randint(0,255)
 
-def gradient_colors(colors: Iterable, num_colors: int) -> np.ndarray:
+def gradient_colors(from_color: Tuple, to_color: Tuple, num_colors: int) -> np.ndarray:
     """ Gradient color generator
 
     Args:
-        colors: 2-element tuple or list containing lower and upper boundary colors
-        num_colors: number of colors to return
+        from_color: starting color
+        to_color: ending colors
+        num_colors: number of colors to generate
 
     Returns:
-        Array of 3-element gradient colors
+        Array of 3-element color tuples
     """
-    if len(colors) < 2:
-        raise ValueError("Two colors required to compute gradient")
     if num_colors < 2:
         raise ValueError("Gradient length must be greater than 1")
 
     c = np.linspace(0, 1, num_colors)[:, None, None]
-    x = np.array([colors[0]])
-    y = np.array([colors[1]])
+    x = np.array([from_color])
+    y = np.array([to_color])
     g = y + (x - y) * c
 
     return g.astype(x.dtype)
 
-def rgba_to_rgb(rgba: Union[np.ndarray, Iterable]) -> Tuple[np.ndarray, np.ndarray]:
+def rgba_to_rgb(rgba: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """ Convert RGBA color to RGB color and mask.
 
     Args:
@@ -70,7 +70,7 @@ def rgba_to_rgb(rgba: Union[np.ndarray, Iterable]) -> Tuple[np.ndarray, np.ndarr
 
     return [rgb, m]
 
-def rgb_to_rgba(rgb: Union[np.ndarray, Iterable], alpha: Optional[float] = 1.0) -> np.ndarray:
+def rgb_to_rgba(rgb: np.ndarray, alpha: float = 1.0) -> np.ndarray:
     """ Convert RGB color to RGBA color
 
     Args:
@@ -93,23 +93,3 @@ def rgb_to_rgba(rgb: Union[np.ndarray, Iterable], alpha: Optional[float] = 1.0) 
 
     return rgba
 
-def increase_brightness(img: np.ndarray, value: int = 30) -> np.ndarray:
-    """ Increase image brightness
-
-    Args:
-        img:    An OpenCV image
-        value:  Brightness increment value
-
-    Returns:
-        An OpenCV image
-    """
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    h, s, v = cv2.split(hsv)
-
-    lim = 255 - value
-    v[v > lim] = 255
-    v[v <= lim] += np.uint8(value)
-
-    final_hsv = cv2.merge((h, s, v))
-    img = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
-    return img
