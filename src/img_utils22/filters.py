@@ -10,7 +10,7 @@ from typing import Tuple
 
 from .colors import COLOR_BLACK
 
-def pyramid_filter(img: np.ndarray, sp: int = 20, sr: int = 50) -> np.ndarray:
+def pyramid_filter(img: np.ndarray, sp: int = 10, sr: int = 10) -> np.ndarray:
     """ Pyramid (aka mean shift) filtering.
     Produces some kind of "posterized" image with color gradients and fine-grain texture flattened.
 
@@ -44,46 +44,19 @@ def extract_channel(img: np.ndarray, channel: str) -> np.ndarray:
     parts = cv2.split(img)
     return parts[_CHANNELS.index(channel)]
 
-_THRESH_METHODS = {
-    'binary': cv2.THRESH_BINARY,
-    'binary_inv': cv2.THRESH_BINARY_INV,
-    'truncate': cv2.THRESH_TRUNC,
-    'to_zero': cv2.THRESH_TOZERO,
-    'to_zero_inv': cv2.THRESH_TOZERO_INV
-}
-_THRESH_EXTRA = {
-    'otsu': cv2.THRESH_OTSU,
-    'triangle': cv2.THRESH_TRIANGLE,
-}
-
 def threshold(
     img: np.ndarray, 
-    method: str = 'binary+otsu', 
+    method: int = cv2.THRESH_BINARY, 
     threshold: int = 0, 
     maxval: int = 127) -> np.ndarray:
-
     """ Thresholding """
 
-    # Determine method
-    tr_comp = method.split('+')
-    if tr_comp[0] in _THRESH_METHODS:
-        tr_method = _THRESH_METHODS[tr_comp[0]]
-        if len(tr_comp) > 1:
-            if tr_comp[1] not in _THRESH_EXTRA:
-                raise ValueError(f'Invalid thresholding extra: {tr_comp[1]}')
-            tr_method += _THRESH_EXTRA[tr_comp[1]]
-    elif tr_comp[0] in _THRESH_EXTRA:            
-        tr_method = cv2.THRESH_BINARY + _THRESH_EXTRA[tr_comp[0]]
-    else:
-        raise ValueError(f'Invalid thresholding method: {method}')
-
-    _, thresh = cv2.threshold(img, threshold, maxval, tr_method)
+    _, thresh = cv2.threshold(img, threshold, maxval, method)
     return thresh
 
 @lru_cache
 def _get_kernel(sz):
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(100,100))
-    return cv2.resize(kernel, (sz, sz))
+    return cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(sz,sz))
 
 def dilate(
     img: np.ndarray, 
@@ -155,3 +128,4 @@ def increase_brightness(img: np.ndarray, value: int = 10) -> np.ndarray:
 
     final_hsv = cv2.merge((h, s, v))
     return cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+

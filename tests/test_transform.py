@@ -6,7 +6,7 @@ import pytest
 import numpy as np
 from common import show_image
 
-from img_utils22 import patch, resize, rescale, COLOR_WHITE
+from img_utils22 import patch, resize, rescale, rotate, COLOR_WHITE
 
 def test_apply_patch(white_square_image, small_black_square_image, debug_show):
     py, px = int(white_square_image.shape[0] / 2), int(white_square_image.shape[1] / 2)
@@ -83,3 +83,14 @@ def test_rescale(black_rect_image, debug_show):
     assert scale == (2.0, 2.0)
     assert offs == (int(black_rect_image.shape[1]/2), int(black_rect_image.shape[0]/2))
     show_image(img, debug_show, 'test_upscale:3 - upscale to max centered')
+
+def test_rotate(blue_square_image, debug_show):
+    show_image(blue_square_image, debug_show, 'test_rotate:1 - original')
+
+    img = rotate(blue_square_image, 45, COLOR_WHITE, avoid_clipping=False)
+    assert img.shape == blue_square_image.shape
+    show_image(img, debug_show, 'test_rotate:1 - rotated as-is')
+
+    img = rotate(blue_square_image, 45, COLOR_WHITE, avoid_clipping=True)
+    assert img.shape != blue_square_image.shape
+    show_image(img, debug_show, 'test_rotate:1 - rotated no-clip')

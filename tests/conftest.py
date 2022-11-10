@@ -6,6 +6,7 @@ import pytest
 import cv2
 import numpy as np
 from img_utils22 import rotate
+from common import get_web_image
 
 # from https://stackoverflow.com/questions/40880259/how-to-pass-arguments-in-pytest-by-command-line
 def pytest_addoption(parser):
@@ -74,3 +75,13 @@ def blue_shifted_square_image(white_square_image):
     cy, cx = int(white_square_image.shape[0]/2), int(white_square_image.shape[1]/2)
     return cv2.rectangle(white_square_image.copy(), (int(cx/2)+int(cx/4), int(cy/2)+int(cy/4)), 
                          (cx+int(cx/2), cy+int(cy/2)), (255,0,0), -1)
+
+@pytest.fixture
+def test_color_image():
+    return get_web_image('https://upload.wikimedia.org/wikipedia/en/7/7d/Lenna_%28test_image%29.png')
+
+@pytest.fixture
+def test_fgbg_images():
+    img_fg = get_web_image('https://i.stack.imgur.com/oyrKo.jpg')
+    img_bg = get_web_image('https://i.stack.imgur.com/rMoqy.jpg')
+    return img_fg, img_bg

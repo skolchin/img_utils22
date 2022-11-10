@@ -234,11 +234,11 @@ def rotate(img: np.ndarray,
     cx, cy = w / 2, h / 2
 
     M = cv2.getRotationMatrix2D((cx, cy), -angle, 1.0)
-    c1, c2 = np.abs(M[0, 0]), np.abs(M[0, 1])
+    cos, sin = np.abs(M[0, 0]), np.abs(M[0, 1])
 
     if avoid_clipping:
-        nw = int((h * c2) + (w * c1))
-        nh = int((h * c1) + (w * c2))
+        nw = int((h * sin) + (w * cos))
+        nh = int((h * cos) + (w * sin))
         w, h = nw, nh
 
         M[0, 2] += (w / 2) - cx

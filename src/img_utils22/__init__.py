@@ -21,9 +21,14 @@ from .transform import (
 from .misc import (
     img1_to_img3,
     get_image_area,
-    get_image_diff,
 )
 from .align_images import align_images
+from .mask import (
+    get_image_diff,
+    get_bgsub_mask,
+    get_fgx_mask,
+    apply_image_mask
+)
 from .filters import (
     pyramid_filter,
     gray,

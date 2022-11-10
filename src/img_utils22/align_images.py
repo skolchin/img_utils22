@@ -8,7 +8,7 @@
 
 import cv2
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Literal
 from .colors import COLOR_BLACK
 
 _MODES = {
@@ -21,7 +21,7 @@ _MODES = {
 def align_images(
     im1: np.ndarray, 
     im2: np.ndarray, 
-    mode: str = 'affine',
+    mode: Literal['affine', 'translation', 'homography', 'euclidian'] = 'affine',
     pad_color: Tuple = COLOR_BLACK,
     num_iter: int = 1000,
     term_eps: float = 1e-10) -> np.ndarray:
