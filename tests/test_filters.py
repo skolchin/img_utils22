@@ -66,6 +66,8 @@ def test_pipe(test_color_image, debug_show):
 
     assert filters.PyramidFilter in pipe
     assert filters.Gray in pipe
+    assert 'Gray' in pipe
+    assert 'Bla' not in pipe
 
 # def test_filter_clahe(test_color_image, debug_show):
 #     show_image(test_color_image, debug_show, title='clahe:1 - source')

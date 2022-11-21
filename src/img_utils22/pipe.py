@@ -49,11 +49,13 @@ class Pipe:
 
     def __getitem__(self, fclass):
         for func in self.__funcs:
-            if isinstance(fclass, str) and str(type(func)) == fclass:
+            if isinstance(fclass, str):
+                name = func.__class__.__name__ if hasattr(func, '__class__') else func.__name__
+                if name == fclass:
+                    return func
+            elif isinstance(func, fclass):
                 return func
-            if isinstance(func, fclass):
-                return func
-        raise KeyError(str(fclass))
+        raise KeyError(fclass)
 
     def find(self, fclass):
         try:
