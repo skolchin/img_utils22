@@ -57,7 +57,8 @@ def test_pipe(test_color_image, debug_show):
     pipe = Pipe() | \
         filters.PyramidFilter() | \
         filters.Gray() | \
-        filters.Edges()
+        filters.Edges() | \
+        filters.Ensure3()
 
     img = pipe(test_color_image)
     show_image(test_color_image, debug_show, title='pipe:1 - original')

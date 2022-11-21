@@ -88,7 +88,7 @@ class Ensure3:
         An OpenCV 3-channel image
     """
     def __call__(self, img: np.ndarray) -> np.ndarray:
-        return img if len(img).shape == 3 else img1_to_img3(img)
+        return img if not isinstance(len(img), int) and len(img).shape == 3 else img1_to_img3(img)
 
 class PyramidFilter:
     """ Pyramid (aka mean shift) filtering.
