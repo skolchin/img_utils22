@@ -30,6 +30,8 @@ from .mask import (
     apply_image_mask
 )
 from .filters import (
+    LoadFile,
+    Resize,
     PyramidFilter,
     Gray,
     Edges,

@@ -6,10 +6,47 @@
 import numpy as np
 import cv2
 from functools import lru_cache
-from typing import Tuple, Union, Optional
+from typing import Tuple, Union, Optional, Iterable
 
 from .colors import COLOR_BLACK
 from .misc import img1_to_img3, _assert_1ch, _assert_3ch
+from .transform import resize, rescale, rotate
+
+class LoadFile:
+    """ Load an image from file 
+    
+    Args:
+        filename    File name
+
+    Returns
+        img:    An OpenCV image
+    """
+
+    def __init__(self, filename: str):
+        self.filename = filename
+
+    def __call__(self, nothing) -> np.ndarray:
+        return cv2.imread(self.filename)
+
+class Resize:
+    """ Resize image 
+    
+    Args:
+        img:    An OpenCV image
+        new_size:   New size
+        scale:      Scaling ratio
+
+    See `transform.resize` for details
+
+    Returns
+        img:    An OpenCV image
+    """
+
+    def __init__(self, new_size: Union[Iterable[int], int] = None, scale: Union[Iterable[float], float] = None):
+        self.new_size, self.scale = new_size, scale
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        return resize(img, self.new_size, self.scale, return_extra=False)
 
 class Gray:
     """ Convert an image to gray scale
