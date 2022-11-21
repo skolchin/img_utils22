@@ -32,6 +32,7 @@ from .mask import (
 from .filters import (
     LoadFile,
     Resize,
+    Area,
     PyramidFilter,
     Gray,
     Edges,

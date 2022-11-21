@@ -38,6 +38,29 @@ class Pipe:
         """ Call the pipeline """
         return reduce(lambda im, func: func(im, **kwargs), self.__funcs, img)
 
+    def __len__(self):
+        return len(self.__funcs)
+
+    def __contains__(self, fclass):
+        return self.find(fclass) is not None
+
+    def __iter__(self):
+        return iter(self.__funcs)
+
+    def __getitem__(self, fclass):
+        for func in self.__funcs:
+            if isinstance(fclass, str) and str(type(func)) == fclass:
+                return func
+            if isinstance(func, fclass):
+                return func
+        raise KeyError(str(fclass))
+
+    def find(self, fclass):
+        try:
+            return self[fclass]
+        except KeyError:
+            return None
+
 def pipe(func: Callable):
     """ Pipe decorator
     

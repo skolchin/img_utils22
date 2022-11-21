@@ -64,6 +64,9 @@ def test_pipe(test_color_image, debug_show):
     show_image(test_color_image, debug_show, title='pipe:1 - original')
     show_image(img, debug_show, title='pipe:2 - processed')
 
+    assert filters.PyramidFilter in pipe
+    assert filters.Gray in pipe
+
 # def test_filter_clahe(test_color_image, debug_show):
 #     show_image(test_color_image, debug_show, title='clahe:1 - source')
 #     img = filters.equalize_luminosity(test_color_image)

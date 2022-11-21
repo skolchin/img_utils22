@@ -9,7 +9,7 @@ from functools import lru_cache
 from typing import Tuple, Union, Optional, Iterable
 
 from .colors import COLOR_BLACK
-from .misc import img1_to_img3, _assert_1ch, _assert_3ch
+from .misc import img1_to_img3, get_image_area, _assert_1ch, _assert_3ch
 from .transform import resize, rescale, rotate
 
 class LoadFile:
@@ -47,6 +47,24 @@ class Resize:
 
     def __call__(self, img: np.ndarray) -> np.ndarray:
         return resize(img, self.new_size, self.scale, return_extra=False)
+
+class Area:
+    """ Take an area from image 
+    
+    Args:
+        img:    An OpenCV image
+        area:   Area to extract (list or tuple [x1,y1,x2,y2])
+
+    Returns
+        img:    An OpenCV image
+    """
+
+    def __init__(self, area: Iterable):
+        self.area = area
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        return get_image_area(img, self.area)
+
 
 class Gray:
     """ Convert an image to gray scale
