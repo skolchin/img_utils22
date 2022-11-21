@@ -10,12 +10,14 @@ from typing import Iterable, Tuple, Optional
 
 from .align_images import align_images
 from .filters import _get_kernel
+from .colors import COLOR_BLACK
 
 def get_image_diff(
    im1: np.ndarray, 
    im2: np.ndarray, 
    align_mode: Optional[str] = None,
-   multichannel: Optional[bool] = False) -> Tuple[float, np.ndarray]:
+   multichannel: Optional[bool] = False,
+   pad_color: Optional[Tuple] = COLOR_BLACK) -> Tuple[float, np.ndarray]:
 
     """ Get the difference of two images. 
     The function calculates structure similarity index (SSIM) and difference matrix
@@ -25,9 +27,10 @@ def get_image_diff(
         im1:      First OpenCV image
         im2:      Second OpenCV image
         align_mode:     One of alignment modes (see `align_images` for details). If None,
-                        images would not be aligned
+            images will not be aligned
         multichannel:   If False (default), comparison will be performed on grayed images
-                        improving speed, otherwise - on each color channel separatelly
+            improving speed, otherwise - on each color channel separatelly
+        pad_color: Padding color for `align_images`
 
     Returns:
         2-element tuple with SSIM score (more similarity - higher score) and difference matrix.
@@ -38,7 +41,7 @@ def get_image_diff(
 
     # Algin images if requested
     if align_mode:
-        im2 = align_images(im1, im2, mode=align_mode)
+        im2 = align_images(im1, im2, mode=align_mode, pad_color=pad_color)
 
     if multichannel:
         # Check number of channels
