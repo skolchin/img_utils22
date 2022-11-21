@@ -77,6 +77,10 @@ def blue_shifted_square_image(white_square_image):
                          (cx+int(cx/2), cy+int(cy/2)), (255,0,0), -1)
 
 @pytest.fixture
+def test_gray_image(test_color_image):
+    return cv2.cvtColor(test_color_image, cv2.COLOR_BGR2GRAY)
+
+@pytest.fixture
 def test_color_image():
     return get_web_image('https://upload.wikimedia.org/wikipedia/en/7/7d/Lenna_%28test_image%29.png')
 

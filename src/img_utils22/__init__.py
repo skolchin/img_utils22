@@ -30,13 +30,16 @@ from .mask import (
     apply_image_mask
 )
 from .filters import (
-    pyramid_filter,
-    gray,
-    extract_channel,
-    threshold,
+    PyramidFilter,
+    Gray,
+    Edges,
+    Ensure3,
+    Channel,
+    Threshold,
     dilate,
     erode,
     blur,
     equalize_luminosity,
     increase_brightness,
 )
+from .pipe import Pipe

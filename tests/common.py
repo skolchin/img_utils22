@@ -5,7 +5,7 @@
 import cv2
 
 def show_image(img, debug_show, title='debug'):
-    if debug_show:
+    if img is not None and debug_show:
         cv2.imshow(title, img)
         cv2.waitKey(0)
 
@@ -15,5 +15,5 @@ def put_centered_text(img, text, color=(0,0,0)):
     cv2.putText(img, text, xy, cv2.FONT_HERSHEY_PLAIN, scale, color, int(scale))
 
 def get_web_image(url: str):
-    from skimage import io
-    return cv2.cvtColor(io.imread(url), cv2.COLOR_RGB2BGR)
+    import imageio.v2 as imageio
+    return cv2.cvtColor(imageio.imread(url), cv2.COLOR_RGB2BGR)

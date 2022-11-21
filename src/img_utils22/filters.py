@@ -1,16 +1,59 @@
 # Image processing functions package
 # (c) kol, 2022
 
-""" Extra image processing functions (filters) """
+""" Stacked image processing functions (filters) """
 
 import numpy as np
 import cv2
 from functools import lru_cache
-from typing import Tuple
+from typing import Tuple, Union, Optional
 
 from .colors import COLOR_BLACK
+from .misc import img1_to_img3, _assert_1ch, _assert_3ch
 
-def pyramid_filter(img: np.ndarray, sp: int = 10, sr: int = 10) -> np.ndarray:
+class Gray:
+    """ Convert an image to gray scale
+
+    Args:
+        img:    An OpenCV 3-channel image
+
+    Returns:
+        An OpenCV 1-channel image
+    """
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        _assert_3ch(img)
+        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+class Edges:
+    """ Find edges using Canny algorithm.
+
+    Args:
+        img:    An OpenCV 1-channel image
+
+    Returns:
+        An OpenCV 1-channel image
+    """
+    def __init__(self, thresh1: Optional[int] = 100, thresh2: Optional[int] = 200):
+        self.thresh1, self.thresh2 = thresh1, thresh2
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        _assert_1ch(img)
+        return cv2.Canny(img, self.thresh1, self.thresh2)
+
+class Ensure3:
+    """ Ensure the image has 3 channels.
+
+    Args:
+        img:    An OpenCV image (1- or 3-channel)
+
+    Returns:
+        An OpenCV 3-channel image
+    """
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        return img if len(img).shape == 3 else img1_to_img3(img)
+
+class PyramidFilter:
     """ Pyramid (aka mean shift) filtering.
     Produces some kind of "posterized" image with color gradients and fine-grain texture flattened.
 
@@ -20,39 +63,87 @@ def pyramid_filter(img: np.ndarray, sp: int = 10, sr: int = 10) -> np.ndarray:
         sr:	    The color window (range of colors) radius
 
     Returns:
-        An OpenCV image
+        An OpenCV 3-channel image
     """
-    return cv2.pyrMeanShiftFiltering(img, sp, sr)
+    def __init__(self, sp: Optional[int] = 10, sr: Optional[int] = 10):
+        self.sp, self.sr = sp, sr
 
-def gray(img: np.ndarray) -> np.ndarray:
-    """ Convert an image to gray scale.
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        _assert_3ch(img)
+        return cv2.pyrMeanShiftFiltering(img, self.sp, self.sr)
 
+
+class Channel:
+    """ Extract specified channel from image.
+    
     Args:
         img:    An OpenCV 3-channel image
+        channel: Channel index (0-3) or abbreviation (see `CHANNELS`)
 
     Returns:
-        An OpenCV 1-channel (BW) image
+        An OpenCV 1-channel (BW) image or None if channel is not available for the image
     """
-    return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-_CHANNELS = ['B', 'G', 'R', 'A']
+    CHANNELS = ('B', 'G', 'R', 'A')
 
-def extract_channel(img: np.ndarray, channel: str) -> np.ndarray:
-    """ Extract channel """
-    if channel not in _CHANNELS:
-        raise ValueError(f'Unknown channel: {channel}')
-    parts = cv2.split(img)
-    return parts[_CHANNELS.index(channel)]
+    def __init__(self, channel: Union[str, int]):
+        if isinstance(channel, str) and channel not in self.CHANNELS:
+            raise ValueError('Unknown channel %s', channel)
+        if isinstance(channel, int) and (channel < 0 or channel >= len(self.CHANNELS)):
+            raise ValueError('Invalid channel index %d', channel)
 
-def threshold(
-    img: np.ndarray, 
-    method: int = cv2.THRESH_BINARY, 
-    threshold: int = 0, 
-    maxval: int = 127) -> np.ndarray:
-    """ Thresholding """
+        self.channel = channel
+        self.channel_index = self.CHANNELS.index(channel) if isinstance(channel, str) else int(channel)
 
-    _, thresh = cv2.threshold(img, threshold, maxval, method)
-    return thresh
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        _assert_3ch(img)
+        parts = cv2.split(img)
+        return None if self.channel_index >= len(parts) else parts[self.channel_index]
+
+class Threshold:
+    """ Apply a threshold transformation.
+    
+    Args:
+        img:    An OpenCV 1- or 3-channel image
+        method: Either cv2.THRESH_xxx constant or appropriate string (binary, binary_inv, binary+otsu, ...).
+            Note that OTSU thresholding works only on 1-channel images
+        threshold: Threshold level
+        maxval: Threshold upper boundary (for binary thresholding)
+
+    Returns:
+        An OpenCV 1- or 3-channel image
+    """
+    METHODS = {
+        'binary': cv2.THRESH_BINARY,
+        'binary_inv': cv2.THRESH_BINARY_INV,
+        'trunc': cv2.THRESH_TRUNC,
+        'tozero': cv2.THRESH_TOZERO,
+        'tozero_inv': cv2.THRESH_TOZERO_INV,
+    }
+    EXTRA_METHODS = {
+        'otsu': cv2.THRESH_OTSU
+    }
+    def __init__(self, method: Union[int, str] = cv2.THRESH_BINARY, threshold: int = 127, maxval: int = 255):
+        self.threshold = threshold
+        self.maxval = maxval
+
+        if isinstance(method, str) and method.split('+')[0] not in self.METHODS:
+            raise ValueError('Unknown method %s', method)
+        if isinstance(method, int) and method not in self.METHODS.values():
+            raise ValueError('Invalid method value %d', method)
+
+        self.method = method
+        if isinstance(method, int):
+            self.method_value = self.method
+        else:
+            parts = method.split('+')
+            self.method_value = self.METHODS[parts[0]]
+            if len(parts) > 1:
+                self.method_value += self.EXTRA_METHODS[parts[1]]
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        self._thesh_ret, thresh = cv2.threshold(img, self.threshold, self.maxval, self.method_value)
+        return thresh
 
 @lru_cache
 def _get_kernel(sz):

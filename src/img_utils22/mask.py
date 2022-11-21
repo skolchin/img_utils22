@@ -6,7 +6,7 @@
 import cv2
 import numpy as np
 from skimage.metrics import structural_similarity
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, Optional
 
 from .align_images import align_images
 from .filters import _get_kernel
@@ -14,8 +14,8 @@ from .filters import _get_kernel
 def get_image_diff(
    im1: np.ndarray, 
    im2: np.ndarray, 
-   align_mode: str = None,
-   multichannel: bool = False) -> Tuple[float, np.ndarray]:
+   align_mode: Optional[str] = None,
+   multichannel: Optional[bool] = False) -> Tuple[float, np.ndarray]:
 
     """ Get the difference of two images. 
     The function calculates structure similarity index (SSIM) and difference matrix
@@ -59,19 +59,19 @@ def get_image_diff(
 def get_bgsub_mask(
     img: np.ndarray,
     img_bg: np.ndarray,
-    kernel_size: int = 10
+    kernel_size: Optional[int] = 10
 ) -> np.ndarray:
     """ Calculate background subtraction mask using static background and foreground images.
 
     Based on https://stackoverflow.com/questions/25617252/opencv-background-segmentation-subtraction-from-single-image
 
     Args:
-        img:    An OpenCV image with background
+        img:    An OpenCV image with background and probably some foreground objects
         img_bg: An OpenCV image with pure background
 
     Returns:
         A mask to subtract the background from foreground image. Use `apply_image_mask` to actually 
-        extract the background
+        extract the foreground
 
     Examples:
 
@@ -115,10 +115,10 @@ def apply_image_mask(
 
 def get_fgx_mask(
     img: np.ndarray,
-    mask_rect: Iterable = None,
-    mask_array: np.ndarray = None,
-    model: Tuple = None,
-    num_iter: int = 5,
+    mask_rect: Optional[Iterable] = None,
+    mask_array: Optional[np.ndarray] = None,
+    model: Optional[Tuple] = None,
+    num_iter: Optional[int] = 5,
 ) -> Tuple[np.ndarray, Tuple]:
 
     """ Extracts a foreground mask from image
@@ -131,7 +131,7 @@ def get_fgx_mask(
         num_iter:   Number of iterations
 
     Returns:
-        Tuple containing generated mask and trained model parts
+        Tuple containing generated mask and extraction model
     """
 
     if model is None:
@@ -167,6 +167,6 @@ def get_fgx_mask(
         mask, bgdModel, fgdModel = cv2.grabCut(img, mask_array, None, bgdModel, fgdModel, num_iter, cv2.GC_INIT_WITH_MASK)
         mask = np.where((mask == cv2.GC_PR_BGD) | (mask == cv2.GC_BGD), 0, 1).astype(np.uint8)
     else:
-        raise ValueError('Either mask_rect or mask have to be provided')
+        raise ValueError('Either mask_rect or mask_array have to be provided')
 
     return mask, (bgdModel, fgdModel)
