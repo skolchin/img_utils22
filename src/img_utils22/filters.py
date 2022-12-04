@@ -389,8 +389,8 @@ class ExtractObjects:
 
         bgclr = self.bgcolor[0] if isinstance(self.bgcolor, tuple) else self.bgcolor
         self.mask = get_bgsub_mask(img, np.full(img.shape, bgclr, img.dtype))
-        nonzero: np.ndarray = np.nonzero(self.mask)
-        if not nonzero.size:
+        nonzero = np.nonzero(self.mask)
+        if not nonzero[0].any() or not nonzero[1].any():
             # only background color
             return np.full(img.shape, bgclr, img.dtype)
 
