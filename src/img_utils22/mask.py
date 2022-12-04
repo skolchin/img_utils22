@@ -9,7 +9,7 @@ from skimage.metrics import structural_similarity
 from typing import Iterable, Tuple, Optional
 
 from .align_images import align_images
-from .filters import _get_kernel
+from .misc import get_kernel
 from .colors import COLOR_BLACK
 
 def get_image_diff(
@@ -89,7 +89,7 @@ def get_bgsub_mask(
     _ = backSub.apply(img_bg)
     mask = backSub.apply(img)
 
-    kernel = _get_kernel(kernel_size)
+    kernel = get_kernel(kernel_size)
     mask_morph = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     mask_morph = cv2.morphologyEx(mask_morph, cv2.MORPH_CLOSE, kernel)
 

@@ -3,7 +3,9 @@
 
 """ Misc routines """
 
+import cv2
 import numpy as np
+from functools import lru_cache
 from typing import Iterable
 
 def _assert_1ch(img):
@@ -62,4 +64,8 @@ def get_image_area(img: np.ndarray, area: Iterable) -> np.ndarray:
 
     im[:] = img[area[1]:area[3], area[0]:area[2]]
     return im
+
+@lru_cache
+def get_kernel(sz):
+    return cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(sz,sz))
 

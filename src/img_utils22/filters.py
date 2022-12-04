@@ -3,14 +3,14 @@
 
 """ Stacked image processing functions (filters) """
 
-import numpy as np
 import cv2
-from functools import lru_cache
+import numpy as np
 from typing import Tuple, Union, Optional, Iterable
 
 from .colors import COLOR_BLACK
-from .misc import img1_to_img3, get_image_area, _assert_1ch, _assert_3ch
+from .misc import img1_to_img3, get_image_area, _assert_1ch, _assert_3ch, get_kernel
 from .transform import resize, rescale, rotate
+from .mask import get_bgsub_mask, apply_image_mask
 
 class LoadFile:
     """ Load an image from file 
@@ -28,6 +28,25 @@ class LoadFile:
     def __call__(self, nothing) -> np.ndarray:
         return cv2.imread(self.filename)
 
+class ShowImage:
+    """ Shows the image 
+    
+    Args:
+        img:    An OpenCV image
+        title:  Optional window title
+
+    Returns
+        img:    An OpenCV image
+    """
+
+    def __init__(self, title: str = 'image'):
+        self.title = title
+
+    def __call__(self, img: np.ndarray, title: str = None) -> np.ndarray:
+        cv2.imshow(title or self.title, img)
+        cv2.waitKey(0)
+        return img
+        
 class Resize:
     """ Resize image 
     
@@ -200,78 +219,185 @@ class Threshold:
         self._thesh_ret, thresh = cv2.threshold(img, self.threshold, self.maxval, self.method_value)
         return thresh
 
-@lru_cache
-def _get_kernel(sz):
-    return cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(sz,sz))
-
-def dilate(
-    img: np.ndarray, 
-    num_iter: int = 1,
-    kernel_size: int = 10,
-    pad_color: Tuple = COLOR_BLACK) -> np.ndarray:
-    """ Dilation """
-
-    kernel = _get_kernel(kernel_size)
-    return cv2.dilate(img, kernel,
-                        iterations=num_iter,
-                        borderType = cv2.BORDER_CONSTANT,
-                        borderValue = pad_color)
-
-def erode(
-    img: np.ndarray, 
-    num_iter: int = 1,
-    kernel_size: int = 10,
-    pad_color: Tuple = COLOR_BLACK) -> np.ndarray:
-    """ Erosion """
-
-    kernel = _get_kernel(kernel_size)
-    return cv2.erode(img, kernel,
-                        iterations=num_iter,
-                        borderType = cv2.BORDER_CONSTANT,
-                        borderValue = pad_color)
-
-
-def blur(img: np.ndarray, mask_size: int = 3) -> np.ndarray:
-    """ Blur """
-    return cv2.blur(img, (mask_size, mask_size))
-
-def equalize_luminosity(img: np.ndarray, kernel_size: int = 8, clip_limit: float = 3.0) -> np.ndarray:
-    """ Luminosity equaliztion (CLAHE) """
-
-    # Convert to LAB color space
-    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-
-    # Split channels
-    l, a, b = cv2.split(lab)
-
-    # Apply CLAHE to l_channel
-    clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(kernel_size,kernel_size))
-    cl = clahe.apply(l)
-
-    # Merge back and convert to RGB color space
-    merged = cv2.merge((cl,a,b))
-    return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
-
-def increase_brightness(img: np.ndarray, value: int = 10) -> np.ndarray:
-    """ Increase image brightness
-
+class Dilate:
+    """ Dilates an image.
+    
     Args:
-        img:    An OpenCV image
+        img:    An OpenCV 1- or 3-channel image
+        num_iter:   Number of iterations (default 1)
+        kernel_size: Kernel size
+        pad_color: Padding color
+
+    Returns:
+        An OpenCV 1- or 3-channel image
+    """
+    def __init__(self,
+        num_iter: int = 1,
+        kernel_size: int = 10,
+        pad_color: Tuple = COLOR_BLACK):
+
+        self.num_iter = num_iter
+        self.kernel_size = kernel_size
+        self.pad_color = pad_color
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        kernel = get_kernel(self.kernel_size)
+        return cv2.dilate(img, kernel,
+                            iterations=self.num_iter,
+                            borderType = cv2.BORDER_CONSTANT,
+                            borderValue = self.pad_color)
+
+class Erode:
+    """ Erodes an image.
+    
+    Args:
+        img:    An OpenCV 1- or 3-channel image
+        num_iter:   Number of iterations (default 1)
+        kernel_size: Kernel size
+        pad_color: Padding color
+
+    Returns:
+        An OpenCV 1- or 3-channel image
+    """
+    def __init__(self,
+        num_iter: int = 1,
+        kernel_size: int = 10,
+        pad_color: Tuple = COLOR_BLACK):
+
+        self.num_iter = num_iter
+        self.kernel_size = kernel_size
+        self.pad_color = pad_color
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        kernel = get_kernel(self.kernel_size)
+        return cv2.erode(img, kernel,
+                            iterations=self.num_iter,
+                            borderType = cv2.BORDER_CONSTANT,
+                            borderValue = self.pad_color)
+
+class Blur:
+    """ Blurs an image.
+    
+    Args:
+        img:    An OpenCV 1- or 3-channel image
+        mask_size: Mask size
+
+    Returns:
+        An OpenCV 1- or 3-channel image
+    """
+    def __init__(self, mask_size: int = 3):
+        self.mask_size = mask_size
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        return cv2.blur(img, (self.mask_size, self.mask_size))
+
+class EqualizeLuminosity:
+    """ Luminosity equalization filter (CLAHE).
+    
+    Args:
+        img:    An OpenCV 1- or 3-channel image
+        kernel_size: Kernel size
+        clip_limit: Clip limit
+
+    Returns:
+        An OpenCV 1- or 3-channel image
+    """
+    def __init__(self,
+        kernel_size: int = 10,
+        clip_limit: float = 3.0):
+
+        self.kernel_size = kernel_size
+        self.clip_limit = clip_limit
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        # Convert to LAB color space
+        lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+
+        # Split channels
+        l, a, b = cv2.split(lab)
+
+        # Apply CLAHE to l_channel
+        clahe = cv2.createCLAHE(clipLimit=self.clip_limit, tileGridSize=(self.kernel_size, self.kernel_size))
+        cl = clahe.apply(l)
+
+        # Merge back and convert to RGB color space
+        merged = cv2.merge((cl,a,b))
+        return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
+
+class IncreaseBrightness:
+    """ Increase image brightness.
+    
+    Args:
+        img:    An OpenCV 1- or 3-channel image
         value:  Brightness change value (> or < 0)
 
     Returns:
-        An OpenCV image
+        An OpenCV 1- or 3-channel image
     """
-    lim = 255 - int(value)
-    if lim < 0 or lim > 255:
-        raise ValueError(f'Invalid increment value {value}')
+    def __init__(self, value: int = 10):
+        self.value = value
 
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    h, s, v = cv2.split(hsv)
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        lim = 255 - int(self.value)
+        if lim < 0 or lim > 255:
+            raise ValueError(f'Invalid increment value {self.value}')
 
-    v[v > lim] = 255
-    v[v <= lim] += np.uint8(value)
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        h, s, v = cv2.split(hsv)
 
-    final_hsv = cv2.merge((h, s, v))
-    return cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+        v[v > lim] = 255
+        v[v <= lim] += np.uint8(self.value)
 
+        final_hsv = cv2.merge((h, s, v))
+        return cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+
+class ExtractForeground:
+    """ Extracts foreground from single-colored background 
+    Args:
+        img:    An OpenCV 3-channel image
+        bgcolor:    Background color, 3-element tuple or integer
+
+    Returns:
+        An OpenCV 3-channel image with background removed
+    """
+    def __init__(self, bgcolor: Union[Tuple, int] = COLOR_BLACK):
+        self.bgcolor = bgcolor
+        self.mask = None
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        _assert_3ch(img)
+        bgclr = self.bgcolor[0] if isinstance(self.bgcolor, tuple) else self.bgcolor
+        self.mask = get_bgsub_mask(img, np.full(img.shape, bgclr, img.dtype))
+        return apply_image_mask(img, self.mask)
+
+class ExtractObjects:
+    """ Extracts foreground objects from single-colored background 
+    Args:
+        img:    An OpenCV 3-channel image
+        bgcolor:  Background color, 3-element tuple or integer
+
+    Returns:
+        An OpenCV 3-channel image containing area which encompasses all objects found
+    """
+    def __init__(self, bgcolor: Union[Tuple, int] = COLOR_BLACK):
+        self.bgcolor = bgcolor
+        self.mask = None
+        self.fg_rect = None
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        _assert_3ch(img)
+
+        bgclr = self.bgcolor[0] if isinstance(self.bgcolor, tuple) else self.bgcolor
+        self.mask = get_bgsub_mask(img, np.full(img.shape, bgclr, img.dtype))
+        nonzero: np.ndarray = np.nonzero(self.mask)
+        if not nonzero.size:
+            # only background color
+            return np.full(img.shape, bgclr, img.dtype)
+
+        self.fg_rect = [
+            max(min(nonzero[1]) - 5, 0),
+            max(min(nonzero[0]) - 5, 0),
+            min(max(nonzero[1]) + 5, img.shape[1]),
+            min(max(nonzero[0]) + 5, img.shape[0])
+        ]
+        return get_image_area(img, self.fg_rect)

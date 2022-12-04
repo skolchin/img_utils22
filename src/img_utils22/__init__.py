@@ -31,6 +31,7 @@ from .mask import (
 )
 from .filters import (
     LoadFile,
+    ShowImage,
     Resize,
     Area,
     PyramidFilter,
@@ -39,10 +40,12 @@ from .filters import (
     Ensure3,
     Channel,
     Threshold,
-    dilate,
-    erode,
-    blur,
-    equalize_luminosity,
-    increase_brightness,
+    Dilate,
+    Erode,
+    Blur,
+    EqualizeLuminosity,
+    IncreaseBrightness,
+    ExtractForeground,
+    ExtractObjects,
 )
 from .pipe import Pipe
