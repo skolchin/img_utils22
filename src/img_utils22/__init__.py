@@ -19,6 +19,7 @@ from .transform import (
     patch
 )
 from .misc import (
+    imshow,
     img1_to_img3,
     get_image_area,
 )
@@ -49,3 +50,7 @@ from .filters import (
     ExtractObjects,
 )
 from .pipe import Pipe
+
+import cv2
+import atexit
+atexit.register(cv2.destroyAllWindows)

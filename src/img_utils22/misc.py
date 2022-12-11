@@ -14,6 +14,11 @@ def _assert_1ch(img):
 def _assert_3ch(img):
     assert len(img.shape) == 3, 'Image is not 3-channel'
 
+def imshow(img: np.ndarray, title: str = None):
+    """ Shows the image and waits for keypress """
+    cv2.imshow(title, img)
+    cv2.waitKey(0)
+
 def img1_to_img3(img: np.ndarray) -> np.ndarray:
     """ Converts 1-channel (BW) image to 3-channel (color) image.  
     This function complements OpenCV's `cvtColor` allowing to transform pure BW-image
