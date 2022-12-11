@@ -108,12 +108,12 @@ class Edges:
     Returns:
         An OpenCV 1-channel image
     """
-    def __init__(self, thresh1: Optional[int] = 100, thresh2: Optional[int] = 200):
-        self.thresh1, self.thresh2 = thresh1, thresh2
+    def __init__(self, thresh1: Optional[int] = 100, thresh2: Optional[int] = 200, apertureSize: Optional[int] = 3):
+        self.thresh1, self.thresh2, self.apertureSize = thresh1, thresh2, apertureSize
 
     def __call__(self, img: np.ndarray) -> np.ndarray:
         _assert_1ch(img)
-        return cv2.Canny(img, self.thresh1, self.thresh2)
+        return cv2.Canny(img, self.thresh1, self.thresh2, apertureSize=self.apertureSize)
 
 class Ensure3:
     """ Ensure the image has 3 channels.
