@@ -63,6 +63,23 @@ class Pipe:
         except KeyError:
             return None
 
+class PipedMixin:
+    """ Mixin class to include into piped classes.
+
+    Allows to make pipe from arbitrary function or class with no `Pipe()` call.
+
+    Examples:
+
+        pipe = Pipe() | Gray() | Edges() # traditional way
+        assert isinstance(pipe, Pipe)
+
+        pipe = Gray() | Edges() # this would work too
+        assert isinstance(pipe, Pipe)
+
+    """
+    def __or__(self, func: Callable) -> 'Pipe':
+        return Pipe() | self | func
+
 def pipe(func: Callable):
     """ Pipe decorator
     

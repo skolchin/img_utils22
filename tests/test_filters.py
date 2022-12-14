@@ -5,7 +5,7 @@
 import pytest
 from common import show_image
 
-from img_utils22 import filters, Pipe
+from img_utils22 import filters
 
 def test_filter_edges(test_color_image, test_gray_image, debug_show):
     show_image(test_gray_image, debug_show, title='edges:1 - source')
@@ -52,22 +52,6 @@ def test_filter_threshold(test_color_image, test_gray_image, debug_show):
     img = filters.Threshold('binary+otsu')(test_gray_image)
     assert img is not None
     show_image(img, debug_show, title=f'thresh:3 - binary+otsu')
-
-def test_pipe(test_color_image, debug_show):
-    pipe = Pipe() | \
-        filters.PyramidFilter() | \
-        filters.Gray() | \
-        filters.Edges() | \
-        filters.Ensure3()
-
-    img = pipe(test_color_image)
-    show_image(test_color_image, debug_show, title='pipe:1 - original')
-    show_image(img, debug_show, title='pipe:2 - processed')
-
-    assert filters.PyramidFilter in pipe
-    assert filters.Gray in pipe
-    assert 'Gray' in pipe
-    assert 'Bla' not in pipe
 
 # def test_filter_clahe(test_color_image, debug_show):
 #     show_image(test_color_image, debug_show, title='clahe:1 - source')

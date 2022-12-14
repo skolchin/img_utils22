@@ -47,7 +47,7 @@ from .filters import (
     EqualizeLuminosity,
     IncreaseBrightness,
     ExtractForeground,
-    ExtractObjects,
+    ExtractFgObjectsArea,
 )
 from .pipe import Pipe
 

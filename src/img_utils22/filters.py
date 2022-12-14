@@ -11,8 +11,9 @@ from .colors import COLOR_BLACK
 from .misc import img1_to_img3, get_image_area, _assert_1ch, _assert_3ch, get_kernel
 from .transform import resize, rescale, rotate
 from .mask import get_bgsub_mask, apply_image_mask
+from .pipe import PipedMixin
 
-class LoadFile:
+class LoadFile(PipedMixin):
     """ Load an image from file 
     
     Args:
@@ -28,7 +29,7 @@ class LoadFile:
     def __call__(self, nothing) -> np.ndarray:
         return cv2.imread(self.filename)
 
-class ShowImage:
+class ShowImage(PipedMixin):
     """ Shows the image 
     
     Args:
@@ -47,7 +48,7 @@ class ShowImage:
         cv2.waitKey(0)
         return img
         
-class Resize:
+class Resize(PipedMixin):
     """ Resize image 
     
     Args:
@@ -67,7 +68,7 @@ class Resize:
     def __call__(self, img: np.ndarray) -> np.ndarray:
         return resize(img, self.new_size, self.scale, return_extra=False)
 
-class Area:
+class Area(PipedMixin):
     """ Take an area from image 
     
     Args:
@@ -85,7 +86,7 @@ class Area:
         return get_image_area(img, self.area)
 
 
-class Gray:
+class Gray(PipedMixin):
     """ Convert an image to gray scale
 
     Args:
@@ -99,7 +100,7 @@ class Gray:
         _assert_3ch(img)
         return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-class Edges:
+class Edges(PipedMixin):
     """ Find edges using Canny algorithm.
 
     Args:
@@ -115,7 +116,7 @@ class Edges:
         _assert_1ch(img)
         return cv2.Canny(img, self.thresh1, self.thresh2, apertureSize=self.apertureSize)
 
-class Ensure3:
+class Ensure3(PipedMixin):
     """ Ensure the image has 3 channels.
 
     Args:
@@ -127,7 +128,7 @@ class Ensure3:
     def __call__(self, img: np.ndarray) -> np.ndarray:
         return img if not isinstance(len(img), int) and len(img).shape == 3 else img1_to_img3(img)
 
-class PyramidFilter:
+class PyramidFilter(PipedMixin):
     """ Pyramid (aka mean shift) filtering.
     Produces some kind of "posterized" image with color gradients and fine-grain texture flattened.
 
@@ -147,7 +148,7 @@ class PyramidFilter:
         return cv2.pyrMeanShiftFiltering(img, self.sp, self.sr)
 
 
-class Channel:
+class Channel(PipedMixin):
     """ Extract specified channel from image.
     
     Args:
@@ -174,7 +175,7 @@ class Channel:
         parts = cv2.split(img)
         return None if self.channel_index >= len(parts) else parts[self.channel_index]
 
-class Threshold:
+class Threshold(PipedMixin):
     """ Apply a threshold transformation.
     
     Args:
@@ -219,7 +220,7 @@ class Threshold:
         self._thesh_ret, thresh = cv2.threshold(img, self.threshold, self.maxval, self.method_value)
         return thresh
 
-class Dilate:
+class Dilate(PipedMixin):
     """ Dilates an image.
     
     Args:
@@ -247,7 +248,7 @@ class Dilate:
                             borderType = cv2.BORDER_CONSTANT,
                             borderValue = self.pad_color)
 
-class Erode:
+class Erode(PipedMixin):
     """ Erodes an image.
     
     Args:
@@ -275,7 +276,7 @@ class Erode:
                             borderType = cv2.BORDER_CONSTANT,
                             borderValue = self.pad_color)
 
-class Blur:
+class Blur(PipedMixin):
     """ Blurs an image.
     
     Args:
@@ -291,7 +292,7 @@ class Blur:
     def __call__(self, img: np.ndarray) -> np.ndarray:
         return cv2.blur(img, (self.mask_size, self.mask_size))
 
-class EqualizeLuminosity:
+class EqualizeLuminosity(PipedMixin):
     """ Luminosity equalization filter (CLAHE).
     
     Args:
@@ -324,7 +325,7 @@ class EqualizeLuminosity:
         merged = cv2.merge((cl,a,b))
         return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
 
-class IncreaseBrightness:
+class IncreaseBrightness(PipedMixin):
     """ Increase image brightness.
     
     Args:
@@ -351,7 +352,7 @@ class IncreaseBrightness:
         final_hsv = cv2.merge((h, s, v))
         return cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
 
-class ExtractForeground:
+class ExtractForeground(PipedMixin):
     """ Extracts foreground from single-colored background 
     Args:
         img:    An OpenCV 3-channel image
@@ -370,17 +371,19 @@ class ExtractForeground:
         self.mask = get_bgsub_mask(img, np.full(img.shape, bgclr, img.dtype))
         return apply_image_mask(img, self.mask)
 
-class ExtractObjects:
-    """ Extracts foreground objects from single-colored background 
+class ExtractFgObjectsArea(PipedMixin):
+    """ Extracts an area containing foreground objects from single-colored background 
     Args:
         img:    An OpenCV 3-channel image
         bgcolor:  Background color, 3-element tuple or integer
+        relax_rect: How much is to shift away object's bounding box
 
     Returns:
         An OpenCV 3-channel image containing area which encompasses all objects found
     """
-    def __init__(self, bgcolor: Union[Tuple, int] = COLOR_BLACK):
+    def __init__(self, bgcolor: Union[Tuple, int] = COLOR_BLACK, relax_rect: int = 5):
         self.bgcolor = bgcolor
+        self.relax_rect = relax_rect
         self.mask = None
         self.fg_rect = None
 
@@ -395,9 +398,9 @@ class ExtractObjects:
             return np.full(img.shape, bgclr, img.dtype)
 
         self.fg_rect = [
-            max(min(nonzero[1]) - 5, 0),
-            max(min(nonzero[0]) - 5, 0),
-            min(max(nonzero[1]) + 5, img.shape[1]),
-            min(max(nonzero[0]) + 5, img.shape[0])
+            max(min(nonzero[1]) - self.relax_rect, 0),
+            max(min(nonzero[0]) - self.relax_rect, 0),
+            min(max(nonzero[1]) + self.relax_rect, img.shape[1]),
+            min(max(nonzero[0]) + self.relax_rect, img.shape[0])
         ]
         return get_image_area(img, self.fg_rect)
