@@ -5,6 +5,7 @@
 
 import cv2
 import numpy as np
+from .transform import resize
 from functools import lru_cache
 from typing import Iterable
 
@@ -14,8 +15,25 @@ def _assert_1ch(img):
 def _assert_3ch(img):
     assert len(img.shape) == 3, 'Image is not 3-channel'
 
-def imshow(img: np.ndarray, title: str = None):
-    """ Shows the image and waits for keypress """
+def imshow(img: np.ndarray, title: str = 'imshow', max_size: Iterable = None):
+    """ Shows the image and waits for keypress.
+
+    Args:
+        img: An OpenCV image
+        title: Window title. If set to one's previously used, then
+            it will replace content of that window, otherwise a new window will be displayed
+        max_size:   Maximum image size (height, width). 
+            If actual image is bigger and may not fit to screen, it will be downsized to given one
+
+    Returns:
+        None
+    """
+    if img is None:
+        return
+    if max_size is not None and (img.shape[0] > max_size[0] or img.shape[1] > max_size[1]):
+        scale_x, scale_y = max_size[1] / img.shape[1], max_size[0] / img.shape[0]
+        img = resize(img, scale=min(scale_x, scale_y))
+        
     cv2.imshow(title, img)
     cv2.waitKey(0)
 
