@@ -84,6 +84,12 @@ def test_rescale(black_rect_image, debug_show):
     assert offs == (int(black_rect_image.shape[1]/2), int(black_rect_image.shape[0]/2))
     show_image(img, debug_show, 'test_upscale:3 - upscale to max centered')
 
+    new_size = int(max(black_rect_image.shape[:2])/2)
+    img, scale, offs = rescale(black_rect_image, new_size, pad_color=COLOR_WHITE, return_extra=True)
+    assert scale == (0.5, 0.5)
+    assert offs == (0, 0)
+    show_image(img, debug_show, 'test_upscale:3 - upscale to min')
+
 def test_rotate(blue_square_image, debug_show):
     show_image(blue_square_image, debug_show, 'test_rotate:1 - original')
 

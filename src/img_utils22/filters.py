@@ -352,6 +352,24 @@ class IncreaseBrightness(PipedMixin):
         final_hsv = cv2.merge((h, s, v))
         return cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
 
+class AdjustGamma(PipedMixin):
+    """ Change image gamma.
+    
+    Args:
+        img:    An OpenCV 1- or 3-channel image
+        gamma:  Gamma change value
+
+    Returns:
+        An OpenCV 1- or 3-channel image
+    """
+    def __init__(self, gamma: float = 1.0):
+        self.gamma = gamma
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        invGamma = 1.0 / self.gamma
+        _mapping = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+        return cv2.LUT(img, _mapping)
+
 class ExtractForeground(PipedMixin):
     """ Extracts foreground from single-colored background 
     Args:

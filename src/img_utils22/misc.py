@@ -5,7 +5,6 @@
 
 import cv2
 import numpy as np
-from .transform import resize
 from functools import lru_cache
 from typing import Iterable
 
@@ -28,6 +27,7 @@ def imshow(img: np.ndarray, title: str = 'imshow', max_size: Iterable = None):
     Returns:
         None
     """
+    from .transform import resize
     if img is None:
         return
     if max_size is not None and (img.shape[0] > max_size[0] or img.shape[1] > max_size[1]):
@@ -68,18 +68,17 @@ def get_image_area(img: np.ndarray, area: Iterable) -> np.ndarray:
         area:   Area to extract (list or tuple [x1,y1,x2,y2])
 
     Returns:
-        Extracted area as OpenCV image
+        Extracted area copy as OpenCV image
     """
     if not isinstance(area, Iterable) or len(area) < 4:
        raise ValueError(f'4-element iterable is expected, {type(area)} found')
-    if area[0] < 0 or area[1] < 0:
-       raise ValueError(f'Invalid area origin: {area}')
+    if any([a < 0 for a in area]):
+       raise ValueError(f'Invalid area: {area}')
     dx = area[2] - area[0]
     dy = area[3] - area[1]
     if dx <= 0 or dy <= 0:
-       raise ValueError(f'Invalid area length: {area}')
+       raise ValueError(f'Invalid area length or width: {area}')
 
-    im = None
     if len(img.shape) > 2:
        im = np.empty((dy, dx, img.shape[2]), dtype=img.dtype)
     else:
@@ -87,6 +86,34 @@ def get_image_area(img: np.ndarray, area: Iterable) -> np.ndarray:
 
     im[:] = img[area[1]:area[3], area[0]:area[2]]
     return im
+
+def get_center_area(img: np.ndarray, area: Iterable) -> np.ndarray:
+    """Get central part of an image defined by rectangular area.
+
+    Args:
+        img:    An OpenCV image
+        area:   Size of area to extract (list or tuple [heigth, width])
+
+    Returns:
+        Extracted area copy as OpenCV image
+    """
+    if not isinstance(area, Iterable) or len(area) != 2:
+       raise ValueError(f'2-element iterable is expected, {type(area)} found')
+    if any([a < 0 for a in area]):
+       raise ValueError(f'Invalid area: {area}')
+
+    dx = area[1]
+    dy = area[0]
+    # if len(img.shape) > 2:
+    #    im = np.empty((dy, dx, img.shape[2]), dtype=img.dtype)
+    # else:
+    #    im = np.empty((dy, dx), dtype=img.dtype)
+
+    x = int(img.shape[1] / 2 - dx / 2) 
+    y = int(img.shape[0] / 2 - dy / 2) 
+    w = int(img.shape[1] / 2 + dx / 2) 
+    h = int(img.shape[0] / 2 + dy / 2) 
+    return img[y:h, x:w].copy()
 
 @lru_cache
 def get_kernel(sz):

@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from typing import Iterable, Union, Tuple
 
+from .misc import get_center_area
 from .colors import COLOR_BLACK, rgb_to_rgba
 
 def center_image(
@@ -137,6 +138,8 @@ def rescale(
         if not center:
             return extend_image(img, new_size, pad_color), im_scale, (0,0)
         else:
+            if img.shape[0] > new_size[0] or img.shape[1] > new_size[1]:
+                img = get_center_area(img, new_size)
             im, offs = center_image(img, new_size, pad_color)
             return im, im_scale, offs
 

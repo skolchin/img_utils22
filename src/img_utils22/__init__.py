@@ -22,6 +22,7 @@ from .misc import (
     imshow,
     img1_to_img3,
     get_image_area,
+    get_center_area,
 )
 from .align_images import align_images
 from .mask import (
@@ -46,6 +47,7 @@ from .filters import (
     Blur,
     EqualizeLuminosity,
     IncreaseBrightness,
+    AdjustGamma,
     ExtractForeground,
     ExtractFgObjectsArea,
 )
