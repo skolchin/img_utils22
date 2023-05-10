@@ -9,7 +9,7 @@ from typing import Tuple, Union, Optional, Iterable
 
 from .colors import COLOR_BLACK
 from .misc import img1_to_img3, get_image_area, _assert_1ch, _assert_3ch, get_kernel
-from .transform import resize, rescale, rotate
+from .transform import resize, rescale, rotate, zoom_at
 from .mask import get_bgsub_mask, apply_image_mask
 from .pipe import PipedMixin
 
@@ -371,7 +371,8 @@ class AdjustGamma(PipedMixin):
         return cv2.LUT(img, _mapping)
 
 class ExtractForeground(PipedMixin):
-    """ Extracts foreground from single-colored background 
+    """ Extracts foreground from single-colored background
+
     Args:
         img:    An OpenCV 3-channel image
         bgcolor:    Background color, 3-element tuple or integer
@@ -390,7 +391,8 @@ class ExtractForeground(PipedMixin):
         return apply_image_mask(img, self.mask)
 
 class ExtractFgObjectsArea(PipedMixin):
-    """ Extracts an area containing foreground objects from single-colored background 
+    """ Extracts an area containing foreground objects from single-colored background
+
     Args:
         img:    An OpenCV 3-channel image
         bgcolor:  Background color, 3-element tuple or integer
@@ -422,3 +424,23 @@ class ExtractFgObjectsArea(PipedMixin):
             min(max(nonzero[0]) + self.relax_rect, img.shape[0])
         ]
         return get_image_area(img, self.fg_rect)
+
+class Zoom(PipedMixin):
+    """ Zooms the image
+
+    Args:
+        img:    An 1- or 3-channel OpenCV image
+        zoom:   Zoom factor, float value greater than 0. 
+            If it is greater than 1, then image is zoomed in (become larger), 
+            and if less - zoomed out (become smaller).
+        pad_color:  padding color
+
+    Returns:
+        An OpenCV image
+    """
+    def __init__(self, zoom: float, pad_color: Tuple[int] = COLOR_BLACK):
+        self.zoom = zoom
+        self.pad_color = pad_color
+
+    def __call__(self, img: np.ndarray) -> np.ndarray:
+        return zoom_at(img, self.zoom, self.pad_color)

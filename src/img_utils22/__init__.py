@@ -16,7 +16,8 @@ from .transform import (
     rescale,
     resize,
     rotate,
-    patch
+    patch,
+    zoom_at
 )
 from .misc import (
     imshow,
@@ -50,6 +51,7 @@ from .filters import (
     AdjustGamma,
     ExtractForeground,
     ExtractFgObjectsArea,
+    Zoom
 )
 from .pipe import Pipe
 

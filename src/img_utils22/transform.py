@@ -310,3 +310,23 @@ def patch(
 
     dst[y:(y+h), x:(x+w)] = area
     return dst
+
+# https://stackoverflow.com/questions/69050464/zoom-into-image-with-opencv
+def zoom_at(img: np.ndarray, zoom: float, pad_color: Tuple[int] = COLOR_BLACK) -> np.ndarray:
+    """ Zooms image
+
+    Args:
+        img:    An 1- or 3-channel OpenCV image
+        zoom:   Zoom factor, float value greater than 0. 
+            If it is greater than 1, then image is zoomed in (become larger), 
+            and if less - zoomed out (become smaller).
+        pad_color:  padding color
+
+    Returns:
+        An OpenCV image
+    """
+    cy, cx = [ i // 2 for i in img.shape[:-1] ]
+
+    rot_mat = cv2.getRotationMatrix2D((cx,cy), 0, zoom)
+    return cv2.warpAffine(img, rot_mat, img.shape[1::-1], flags=cv2.INTER_NEAREST, 
+        borderMode=cv2.BORDER_CONSTANT, borderValue=pad_color)
